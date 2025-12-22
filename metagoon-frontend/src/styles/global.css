@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  background: #0b0c10; /* site dark background to match Home.vue */
+  color: #f3f4f6;
+}
+
+.container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
