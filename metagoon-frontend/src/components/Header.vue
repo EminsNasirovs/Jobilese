@@ -27,6 +27,11 @@
             to="/admin"
             label="Admin"
           />
+          <NavLink
+            v-if="isLoggedIn"
+            to="/cv"
+            label="CV"
+          />
         </nav>
 
         <div class="flex items-center gap-8">

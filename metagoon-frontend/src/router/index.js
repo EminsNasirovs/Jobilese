@@ -8,6 +8,7 @@ import Profile from '../views/Profile.vue';
 import VacancyDetailed from '../views/VacancyDetailed.vue';
 import Applications from '../views/Applications.vue';
 import AdminPanel from "../views/AdminPanel.vue";
+import CvEditors from '../views/CvEditors.vue';
 
 const routes = [
   {
@@ -22,7 +23,8 @@ const routes = [
   { path: '/registracija', name: 'registracija', component: Regis, meta: { hideHeader: true } },
   { path: '/profile', name: 'profile', component: Profile },
   { path: '/vacancy/:id', component: VacancyDetailed, props: true },
-  { path: '/applications', name: 'applications', component: Applications }, // employer
+  { path: '/applications', name: 'applications', component: Applications },
+  { path: '/cv', name: 'cv', component: CvEditors },
 ];
 
 const router = createRouter({
