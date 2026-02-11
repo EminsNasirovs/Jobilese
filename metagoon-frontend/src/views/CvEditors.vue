@@ -2,7 +2,6 @@
   <div class="min-h-screen bg-[#FDFDFC] text-[#111111] font-sans selection:bg-blue-50">
     <div class="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-2 min-h-screen">
 
-      <!-- ================= EDITOR ================= -->
       <div class="p-8 lg:p-16 border-r border-gray-100 overflow-y-auto max-h-screen custom-scrollbar">
         <header class="mb-12">
           <h1 class="text-5xl font-serif italic mb-4">CV Redaktors.</h1>
@@ -18,7 +17,7 @@
             <textarea
               v-model="cvData.summary"
               class="input-editorial h-32"
-              placeholder="Īss apraksts..."
+              placeholder="Īss apraksts par jūsu mērķiem un prasmēm..."
             />
           </section>
 
@@ -35,7 +34,7 @@
 
             <div
               v-for="(item, index) in cvData.experience"
-              :key="index"
+              :key="'exp-' + index"
               class="p-6 bg-gray-50 space-y-4 relative group"
             >
               <button
@@ -47,13 +46,43 @@
 
               <input v-model="item.role" class="input-editorial" placeholder="Amats" />
               <input v-model="item.company" class="input-editorial" placeholder="Uzņēmums" />
-              <textarea v-model="item.desc" class="input-editorial h-20" placeholder="Apraksts..." />
+              <textarea v-model="item.desc" class="input-editorial h-20" placeholder="Pienākumu apraksts..." />
+            </div>
+          </section>
+
+          <section class="space-y-6">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+              <label class="section-label text-blue-600">Izglītība</label>
+              <button
+                @click="addEducation"
+                class="text-[10px] font-bold uppercase hover:text-blue-600 transition"
+              >
+                + Pievienot
+              </button>
+            </div>
+
+            <div
+              v-for="(item, index) in cvData.education"
+              :key="'edu-' + index"
+              class="p-6 bg-gray-50 space-y-4 relative group"
+            >
+              <button
+                @click="removeEducation(index)"
+                class="absolute top-4 right-4 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+              >
+                ✕
+              </button>
+
+              <input v-model="item.school" class="input-editorial" placeholder="Mācību iestāde" />
+              <div class="grid grid-cols-2 gap-4">
+                <input v-model="item.degree" class="input-editorial" placeholder="Grāds / Specialitāte" />
+                <input v-model="item.year" class="input-editorial" placeholder="Periods (piem. 2018 - 2022)" />
+              </div>
             </div>
           </section>
 
           <section class="space-y-4">
             <label class="section-label">Prasmes</label>
-
             <div class="flex flex-wrap gap-2 mb-3">
               <span
                 v-for="(skill, i) in cvData.skills"
@@ -66,7 +95,6 @@
                 </button>
               </span>
             </div>
-
             <input
               v-model="newSkill"
               @keyup.enter="addSkill"
@@ -84,13 +112,11 @@
         </div>
       </div>
 
-      <!-- ================= PREVIEW ================= -->
-      <div class="bg-gray-200 p-8 lg:p-16 flex justify-center">
+      <div class="bg-gray-200 p-8 lg:p-16 flex justify-center overflow-y-auto">
         <div
           id="cv-paper"
-          class="bg-white w-[210mm] h-[297mm] p-[20mm] shadow-2xl relative flex flex-col text-[#111111]"
+          class="bg-white w-[210mm] min-h-[297mm] p-[20mm] shadow-2xl relative flex flex-col text-[#111111]"
         >
-          <!-- HEADER -->
           <div class="text-center border-b-2 border-black pb-10 mb-10">
             <h2 class="text-5xl font-serif uppercase tracking-tighter mb-4">
               {{ profile.firstname }} {{ profile.lastname }}
@@ -100,7 +126,6 @@
             </div>
           </div>
 
-          <!-- CONTENT -->
           <div class="space-y-10 flex-grow">
             <div v-if="cvData.summary">
               <h3 class="preview-section-title">Profils</h3>
@@ -111,7 +136,6 @@
 
             <div v-if="cvData.experience.length">
               <h3 class="preview-section-title">Darba Pieredze</h3>
-
               <div
                 v-for="(item, index) in cvData.experience"
                 :key="index"
@@ -125,8 +149,29 @@
                     {{ item.company || "Uzņēmums" }}
                   </span>
                 </div>
-                <p class="text-[12px] text-gray-600 leading-snug">
+                <p class="text-[12px] text-gray-600 leading-snug whitespace-pre-line">
                   {{ item.desc }}
+                </p>
+              </div>
+            </div>
+
+            <div v-if="cvData.education.length">
+              <h3 class="preview-section-title">Izglītība</h3>
+              <div
+                v-for="(item, index) in cvData.education"
+                :key="index"
+                class="mb-6 break-inside-avoid"
+              >
+                <div class="flex justify-between items-baseline mb-1">
+                  <span class="font-bold text-base uppercase">
+                    {{ item.school || "Mācību iestāde" }}
+                  </span>
+                  <span class="text-xs italic font-serif text-gray-500">
+                    {{ item.year }}
+                  </span>
+                </div>
+                <p class="text-[12px] text-gray-600 leading-snug">
+                  {{ item.degree }}
                 </p>
               </div>
             </div>
@@ -145,7 +190,6 @@
             </div>
           </div>
 
-          <!-- EXPORT BUTTON -->
           <button
             @click="exportPDF"
             class="export-btn print:hidden"
@@ -176,6 +220,7 @@ const profile = ref({
 const cvData = ref({
   summary: "",
   experience: [{ role: "", company: "", desc: "" }],
+  education: [{ school: "", degree: "", year: "" }],
   skills: []
 });
 
@@ -185,13 +230,24 @@ const fetchInitialData = async () => {
   const token = localStorage.getItem("token");
   if (!token) return;
 
-  const headers = { Authorization: `Bearer ${token}` };
+  try {
+    const headers = { Authorization: `Bearer ${token}` };
+    const userRes = await api.get("/profile", { headers });
+    profile.value = userRes.data;
 
-  const userRes = await api.get("/profile", { headers });
-  profile.value = userRes.data;
-
-  const cvRes = await api.get("/cv", { headers });
-  if (cvRes.data) cvData.value = cvRes.data;
+    const cvRes = await api.get("/cv", { headers });
+    if (cvRes.data) {
+      // Pārliecināmies, ka education masīvs eksistē pat ja vecajā DB ierakstā tā nav
+      cvData.value = {
+        ...cvRes.data,
+        education: cvRes.data.education || [{ school: "", degree: "", year: "" }],
+        experience: cvRes.data.experience || [],
+        skills: cvRes.data.skills || []
+      };
+    }
+  } catch (err) {
+    console.error("Datu ielādes kļūda:", err);
+  }
 };
 
 onMounted(fetchInitialData);
@@ -202,6 +258,12 @@ const addExperience = () =>
 const removeExperience = i =>
   cvData.value.experience.splice(i, 1);
 
+const addEducation = () =>
+  cvData.value.education.push({ school: "", degree: "", year: "" });
+
+const removeEducation = i =>
+  cvData.value.education.splice(i, 1);
+
 const addSkill = () => {
   if (!newSkill.value.trim()) return;
   cvData.value.skills.push(newSkill.value.trim());
@@ -209,11 +271,15 @@ const addSkill = () => {
 };
 
 const saveCV = async () => {
-  const token = localStorage.getItem("token");
-  await api.post("/cv", cvData.value, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  alert("CV saglabāts!");
+  try {
+    const token = localStorage.getItem("token");
+    await api.post("/cv", cvData.value, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    alert("CV saglabāts veiksmīgi!");
+  } catch (err) {
+    alert("Kļūda saglabājot!");
+  }
 };
 
 const exportPDF = async () => {
@@ -221,21 +287,13 @@ const exportPDF = async () => {
   if (!element) return;
 
   try {
-    // 1. Wait for fonts
     await document.fonts.ready;
-
-    // 2. Convert HTML to a High-Res PNG
-    // This bypasses the OKLCH parsing error because it renders to a canvas first
     const dataUrl = await toPng(element, {
       quality: 1,
-      pixelRatio: 2, // Keeps it sharp
-      filter: (node) => {
-        // Exclude the export button from the image
-        return !node.classList?.contains('export-btn');
-      }
+      pixelRatio: 2,
+      filter: (node) => !node.classList?.contains('export-btn')
     });
 
-    // 3. Create PDF
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -246,16 +304,13 @@ const exportPDF = async () => {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-    // 4. Add the image to the PDF and save
     pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save(`${profile.value.firstname || "CV"}.pdf`);
-
+    pdf.save(`${profile.value.firstname || "CV"}_Latvija.pdf`);
   } catch (error) {
     console.error("Export failed:", error);
-    alert("Kļūda eksportējot PDF. Lūdzu, mēģiniet vēlreiz.");
+    alert("Kļūda eksportējot PDF.");
   }
 };
-
 </script>
 
 <style scoped>
@@ -270,14 +325,20 @@ const exportPDF = async () => {
   color: #9CA3AF;
 }
 
-.preview-section-title { color: #2563EB; } /* Use Hex, not oklch() */
+.preview-section-title { 
+  color: #2563EB; 
+  font-size: 14px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1.5rem;
+  border-left: 3px solid #2563EB;
+  padding-left: 10px;
+}
 
-/* Ensure the paper has a forced background for the "camera" to see it */
 #cv-paper {
   background-color: #ffffff !important;
   color: #111111 !important;
-  print-color-adjust: exact;
-  -webkit-print-color-adjust: exact;
 }
 
 .input-editorial {
@@ -287,6 +348,11 @@ const exportPDF = async () => {
   padding: 10px 0;
   font-size: 0.95rem;
   outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-editorial:focus {
+  border-bottom-color: #2563EB;
 }
 
 .export-btn {
@@ -301,9 +367,18 @@ const exportPDF = async () => {
   text-transform: uppercase;
   letter-spacing: 0.2em;
   border-radius: 999px;
+  box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
 }
 
 .break-inside-avoid {
   page-break-inside: avoid;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #E5E7EB;
+  border-radius: 10px;
 }
 </style>

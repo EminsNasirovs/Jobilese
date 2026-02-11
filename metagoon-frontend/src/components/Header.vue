@@ -80,7 +80,7 @@
             <template v-if="isLoggedIn">
               <RouterLink
                 to="/profile"
-                class="text-[11px] font-bold uppercase tracking-widest hover:text-blue-600 transition-colors"
+                class="text-[11px] font-bold uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors"
               >
                 Profils
               </RouterLink>
