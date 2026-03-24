@@ -121,6 +121,9 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import api from "@/services/api";
+import { useToast } from "@/composables/useToast";
+
+const { success, error } = useToast();
 
 const user = ref(null);
 const isEditing = ref(false);
@@ -170,8 +173,8 @@ const saveChanges = async () => {
     const res = await api.put("/profile", form.value, { headers: { Authorization: `Bearer ${token}` } });
     user.value = res.data;
     isEditing.value = false;
-    alert("Profils veiksmīgi atjaunināts!");
-  } catch (err) { alert("Neizdevās atjaunināt profilu."); }
+    success("Profils veiksmīgi atjaunināts!");
+  } catch (err) { error("Neizdevās atjaunināt profilu."); }
 };
 
 const confirmDelete = async () => {
@@ -183,7 +186,7 @@ const confirmDelete = async () => {
     });
     localStorage.removeItem("token");
     window.location.href = "/";
-  } catch (err) { alert(err.response?.data?.message || "Kļūda dzēšanā."); }
+  } catch (err) { error(err.response?.data?.message || "Kļūda dzēšanā."); }
 };
 
 onMounted(fetchProfile);

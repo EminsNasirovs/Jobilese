@@ -79,7 +79,7 @@
                </button>
                <template v-if="user && (vacancy.user_id === user.id || role === 'admin')">
                 <div class="grid grid-cols-2 gap-2">
-                  <button @click="showEditModal = true" class="py-3 bg-gray-100 font-bold uppercase text-[9px] tracking-widest hover:bg-black hover:text-white transition-all">Rediģēt</button>
+                  <button @click="prepareEditData(); showEditModal = true" class="py-3 bg-gray-100 font-bold uppercase text-[9px] tracking-widest hover:bg-black hover:text-white transition-all">Rediģēt</button>
                   <button @click="deleteVacancy" class="py-3 bg-red-50 text-red-500 font-bold uppercase text-[9px] tracking-widest hover:bg-red-500 hover:text-white transition-all">Dzēst</button>
                 </div>
                </template>
@@ -110,6 +110,113 @@
         </div>
       </div>
     </main>
+
+    <!-- ===== APPLICATION MODAL ===== -->
+    <div
+      v-if="showApplicationModal"
+      class="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-sm bg-black/10"
+    >
+      <div class="bg-white w-full max-w-xl p-12 shadow-[0_30px_100px_rgba(0,0,0,0.1)] space-y-8 animate-in fade-in zoom-in duration-300">
+        <div class="flex justify-between items-start">
+          <div>
+            <p class="text-[10px] uppercase font-bold tracking-widest text-gray-400 mb-1">Pieteikties uz</p>
+            <h2 class="text-3xl font-light tracking-tight">{{ vacancy?.title }}</h2>
+          </div>
+          <button @click="showApplicationModal = false" class="text-gray-300 hover:text-black transition-colors text-2xl">&times;</button>
+        </div>
+
+        <div class="space-y-6">
+          <div class="space-y-2">
+            <label class="text-[10px] uppercase font-bold text-gray-400 tracking-widest">Motivācijas vēstule</label>
+            <textarea
+              v-model="coverLetter"
+              rows="5"
+              placeholder="Pastāsti par sevi un kāpēc esi piemērots šim amatam..."
+              class="w-full bg-transparent border-b border-gray-200 py-3 outline-none focus:border-black transition-colors text-sm resize-none"
+            ></textarea>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-[10px] uppercase font-bold text-gray-400 tracking-widest">CV (PDF)</label>
+            <div class="border-2 border-dashed border-gray-100 p-6 text-center hover:border-blue-600 transition-colors cursor-pointer relative">
+              <input type="file" accept=".pdf" @change="handleFile" class="absolute inset-0 opacity-0 cursor-pointer" />
+              <p class="text-[10px] uppercase font-bold text-gray-400">
+                {{ cvFile ? cvFile.name : 'Pievienot CV failu' }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-4 pt-2">
+          <button
+            @click="submitApplication"
+            class="flex-1 bg-black text-white py-5 text-xs font-bold uppercase tracking-widest hover:bg-blue-600 transition-all"
+          >
+            Nosūtīt pieteikumu
+          </button>
+          <button
+            @click="showApplicationModal = false"
+            class="px-8 border border-gray-200 text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-all"
+          >
+            Atcelt
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== EDIT MODAL ===== -->
+    <div
+      v-if="showEditModal"
+      class="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-sm bg-black/10"
+    >
+      <div class="bg-white w-full max-w-xl p-12 shadow-[0_30px_100px_rgba(0,0,0,0.1)] space-y-8 animate-in fade-in zoom-in duration-300">
+        <div class="flex justify-between items-start">
+          <h2 class="text-3xl font-light tracking-tight">Rediģēt <span class="font-serif italic">vakanci</span></h2>
+          <button @click="showEditModal = false" class="text-gray-300 hover:text-black transition-colors text-2xl">&times;</button>
+        </div>
+
+        <form @submit.prevent="updateVacancy" class="space-y-6">
+          <div class="grid grid-cols-2 gap-6">
+            <div class="space-y-1 border-b border-gray-100 pb-2">
+              <label class="text-[10px] uppercase font-bold text-gray-400">Nosaukums</label>
+              <input v-model="editVacancyData.title" required class="w-full bg-transparent outline-none font-medium" />
+            </div>
+            <div class="space-y-1 border-b border-gray-100 pb-2">
+              <label class="text-[10px] uppercase font-bold text-gray-400">Alga</label>
+              <div class="flex gap-2">
+                <input v-model="editVacancyData.salary" required class="w-full bg-transparent outline-none font-medium" />
+                <select v-model="editVacancyData.salary_type" class="bg-transparent outline-none text-[10px] font-bold uppercase">
+                  <option value="Brutto">Brutto</option>
+                  <option value="Neto">Neto</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-6">
+            <div class="space-y-1 border-b border-gray-100 pb-2">
+              <label class="text-[10px] uppercase font-bold text-gray-400">Kategorija</label>
+              <input v-model="editVacancyData.category" required class="w-full bg-transparent outline-none font-medium" />
+            </div>
+            <div class="space-y-1 border-b border-gray-100 pb-2">
+              <label class="text-[10px] uppercase font-bold text-gray-400">Pilsēta</label>
+              <input v-model="editVacancyData.county" required class="w-full bg-transparent outline-none font-medium" />
+            </div>
+          </div>
+          <div class="space-y-1 border-b border-gray-100 pb-2">
+            <label class="text-[10px] uppercase font-bold text-gray-400">Apraksts</label>
+            <textarea v-model="editVacancyData.description" required rows="4" class="w-full bg-transparent outline-none resize-none text-sm"></textarea>
+          </div>
+          <div class="flex gap-4 pt-2">
+            <button type="submit" class="flex-1 bg-black text-white py-5 text-xs font-bold uppercase tracking-widest hover:bg-blue-600 transition-all">
+              Saglabāt
+            </button>
+            <button type="button" @click="showEditModal = false" class="px-8 border border-gray-200 text-xs font-bold uppercase tracking-widest hover:bg-gray-50 transition-all">
+              Atcelt
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -144,6 +251,9 @@ h1, h2, h3, button {
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "@/services/api";
+import { useToast } from "@/composables/useToast";
+
+const { success, error, info } = useToast();
 
 const route = useRoute();
 const router = useRouter();
@@ -203,7 +313,7 @@ const fetchComments = async () => {
 };
 
 const addComment = async () => {
-  if (!newComment.value.comment_text.trim()) return alert("Lūdzu, ieraksti komentāru!");
+  if (!newComment.value.comment_text.trim()) return info("Lūdzu, ieraksti komentāru!");
   try {
     const res = await api.post(
       `/comments`,
@@ -213,8 +323,7 @@ const addComment = async () => {
     comments.value.unshift(res.data.data || res.data);
     newComment.value.comment_text = "";
   } catch (err) {
-    console.error("Add comment error:", err);
-    alert("❌ Neizdevās pievienot komentāru");
+    error("Neizdevās pievienot komentāru");
   }
 };
 
@@ -226,8 +335,7 @@ const deleteComment = async (id) => {
     });
     comments.value = comments.value.filter((c) => c.id !== id);
   } catch (err) {
-    console.error("Delete comment error:", err);
-    alert("❌ Neizdevās dzēst komentāru");
+    error("Neizdevās dzēst komentāru");
   }
 };
 // ====== EDIT & DELETE ======
@@ -252,10 +360,9 @@ const updateVacancy = async () => {
     );
     vacancy.value = res.data.data;
     showEditModal.value = false;
-    alert("✅ Vakance veiksmīgi atjaunota!");
+    success("Vakance veiksmīgi atjaunota!");
   } catch (err) {
-    console.error("Update error:", err);
-    alert(err.response?.data?.message || "❌ Neizdevās atjaunot vakanci");
+    error(err.response?.data?.message || "Neizdevās atjaunot vakanci");
   }
 };
 
@@ -265,22 +372,29 @@ const deleteVacancy = async () => {
     await api.delete(`/vacancies/${vacancy.value.id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    alert("Vakance dzēsta!");
-    router.push("/vacancies");
+    success("Vakance dzēsta!");
+    router.push("/vakances");
   } catch (err) {
-    console.error("Delete error:", err);
-    alert("❌ Neizdevās dzēst vakanci");
+    error("Neizdevās dzēst vakanci");
   }
 };
 
-// ====== PLACEHOLDER METHODS ======
-const toggleFavorite = () => {};
+// ====== FAVORITES ======
+const toggleFavorite = async () => {
+  if (!isLoggedIn) return info("Lūdzu, piesakies, lai saglabātu favorītos!");
+  try {
+    const res = await api.post(`/favorites/${vacancy.value.id}`);
+    isFavorited.value = res.data.favorited;
+  } catch (err) {
+    error("Neizdevās mainīt favorītu statusu");
+  }
+};
 
 const formatDate = (date) => new Date(date).toLocaleString();
 const handleFile = (e) => (cvFile.value = e.target.files[0]);
 const submitApplication = async () => {
   if (!coverLetter.value.trim() && !cvFile.value) {
-    alert("Lūdzu pievienojiet motivācijas vēstuli vai CV!");
+    info("Lūdzu pievienojiet motivācijas vēstuli vai CV!");
     return;
   }
 
@@ -295,25 +409,29 @@ const submitApplication = async () => {
       {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
         },
       }
     );
 
-    alert("✅ Pieteikums veiksmīgi nosūtīts!");
+    success("Pieteikums veiksmīgi nosūtīts!");
     showApplicationModal.value = false;
     coverLetter.value = "";
     cvFile.value = null;
   } catch (err) {
-    console.error("Application error:", err);
-    alert(
-      err.response?.data?.message ||
-        "❌ Neizdevās nosūtīt pieteikumu. Pārbaudi datus!"
-    );
+    error(err.response?.data?.message || "Neizdevās nosūtīt pieteikumu. Pārbaudi datus!");
   }
 };
 
-const fetchFavorites = () => {};
+const fetchFavorites = async () => {
+  if (!token) return;
+  try {
+    const res = await api.get("/favorites");
+    const ids = res.data.map((f) => f.job_vacancy_id);
+    isFavorited.value = ids.includes(Number(route.params.id));
+  } catch (err) {
+    // silent
+  }
+};
 
 onMounted(async () => {
   await fetchUser();

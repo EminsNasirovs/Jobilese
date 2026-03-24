@@ -101,6 +101,9 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import api from "@/services/api.js";
+import { useToast } from "@/composables/useToast";
+
+const { error } = useToast();
 
 const applications = ref([]);
 const showCvModal = ref(false);
@@ -109,7 +112,7 @@ const pdfUrl = ref(null);
 const openCv = (id) => {
   const app = applications.value.find((a) => a.id === id);
   if (!app || !app.cv_path) {
-    alert("CV nav atrasts");
+    error("CV nav atrasts");
     return;
   }
   pdfUrl.value = `http://127.0.0.1:8000/storage/${app.cv_path}`;

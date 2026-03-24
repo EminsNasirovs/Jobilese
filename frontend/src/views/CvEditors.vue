@@ -209,6 +209,9 @@ import { ref, onMounted } from "vue";
 import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import api from "@/services/api";
+import { useToast } from "@/composables/useToast";
+
+const { success, error } = useToast();
 
 const profile = ref({
   firstname: "",
@@ -276,9 +279,9 @@ const saveCV = async () => {
     await api.post("/cv", cvData.value, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    alert("CV saglabāts veiksmīgi!");
+    success("CV saglabāts veiksmīgi!");
   } catch (err) {
-    alert("Kļūda saglabājot!");
+    error("Kļūda saglabājot!");
   }
 };
 
@@ -306,9 +309,8 @@ const exportPDF = async () => {
 
     pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
     pdf.save(`${profile.value.firstname || "CV"}_Latvija.pdf`);
-  } catch (error) {
-    console.error("Export failed:", error);
-    alert("Kļūda eksportējot PDF.");
+  } catch (err) {
+    error("Kļūda eksportējot PDF.");
   }
 };
 </script>

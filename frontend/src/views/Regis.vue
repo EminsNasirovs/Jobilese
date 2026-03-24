@@ -125,6 +125,9 @@
 import { ref } from "vue";
 import { RouterLink } from "vue-router";
 import api from "../services/api.js";
+import { useToast } from "@/composables/useToast";
+
+const { error } = useToast();
 
 const firstname = ref("");
 const lastname = ref("");
@@ -157,7 +160,7 @@ const register = async () => {
     localStorage.setItem("role", response.data.user.role);
     window.location.href = "/profile";
   } catch (err: any) {
-    alert(err.response?.data?.message || "Neizdevās reģistrēties");
+    error(err.response?.data?.message || "Neizdevās reģistrēties");
   }
 };
 </script>

@@ -95,7 +95,9 @@
 import { ref } from "vue";
 import { RouterLink } from "vue-router";
 import api from "../services/api.js";
+import { useToast } from "@/composables/useToast";
 
+const { error } = useToast();
 const username = ref("");
 const password = ref("");
 
@@ -109,8 +111,7 @@ const login = async () => {
     localStorage.setItem("token", response.data.token);
     window.location.href = "/profile";
   } catch (err) {
-    console.error(err.response?.data || err);
-    alert("Nepareizs lietotājvārds vai parole");
+    error("Nepareizs lietotājvārds vai parole");
   }
 };
 </script>

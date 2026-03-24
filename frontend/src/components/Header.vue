@@ -46,9 +46,9 @@
                 <path d="M9 17C9 18.6569 10.3431 20 12 20C13.6569 20 15 18.6569 15 17" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               <span
-                v-if="notifications.length > 0"
-                class="absolute top-2.5 right-2.5 bg-blue-600 w-1.5 h-1.5 rounded-full ring-2 ring-[#FDFDFC]"
-              ></span>
+                v-if="unreadCount > 0"
+                class="absolute -top-1 -right-1 bg-blue-600 text-white text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-1 ring-2 ring-[#FDFDFC]"
+              >{{ unreadCount }}</span>
             </button>
 
             <div
@@ -57,18 +57,31 @@
             >
               <div class="flex justify-between items-center mb-4 pb-2 border-b border-black/5">
                 <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-400">Paziņojumi</span>
+                <button
+                  v-if="unreadCount > 0"
+                  @click="markAllRead"
+                  class="text-[9px] uppercase font-bold tracking-widest text-blue-600 hover:text-black transition-colors"
+                >
+                  Atzīmēt visus
+                </button>
               </div>
-              
+
               <div v-if="notifications.length === 0" class="py-6 text-center text-xs text-gray-400 italic">
                 Nav jaunu ziņu.
               </div>
 
               <div class="max-h-64 overflow-y-auto space-y-3">
-                <div v-for="n in notifications" :key="n.id" class="p-2 hover:bg-gray-50 transition-colors group cursor-pointer">
+                <div
+                  v-for="n in notifications"
+                  :key="n.id"
+                  class="p-2 hover:bg-gray-50 transition-colors group cursor-pointer rounded"
+                  :class="{ 'border-l-2 border-blue-600 pl-3': !n.read_at }"
+                >
                   <p class="text-xs font-bold text-black group-hover:text-blue-600 transition-colors">
-                    {{ n.data.message }}
+                    {{ n.data.applicant_name || n.data.message }}
                   </p>
-                  <p class="text-[9px] text-gray-400 uppercase tracking-widest mt-1">
+                  <p class="text-[9px] text-gray-400 mt-0.5">{{ n.data.message }}</p>
+                  <p class="text-[9px] text-gray-300 uppercase tracking-widest mt-1">
                     {{ formatDate(n.created_at) }}
                   </p>
                 </div>
@@ -127,6 +140,10 @@ const hideHeader = computed(() => route.meta.hideHeader);
 const isLoggedIn = ref(false);
 const userRole = ref(null);
 
+const unreadCount = computed(() =>
+  notifications.value.filter((n) => !n.read_at).length
+);
+
 onMounted(async () => {
   isLoggedIn.value = !!localStorage.getItem("token");
   userRole.value = localStorage.getItem("role");
@@ -135,13 +152,22 @@ onMounted(async () => {
 
 const fetchNotifications = async () => {
   try {
-    const token = localStorage.getItem("token");
-    const response = await api.get("/notifications", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    const response = await api.get("/notifications");
     notifications.value = response.data;
-  } catch (error) {
-    console.error("Kļūda ielādējot paziņojumus");
+  } catch (e) {
+    // silent
+  }
+};
+
+const markAllRead = async () => {
+  try {
+    await api.post("/notifications/read");
+    notifications.value = notifications.value.map((n) => ({
+      ...n,
+      read_at: new Date().toISOString(),
+    }));
+  } catch (e) {
+    // silent
   }
 };
 
@@ -157,7 +183,9 @@ const toggleNotifications = () => {
 };
 
 const formatDate = (date) =>
-  new Date(date).toLocaleTimeString("lv-LV", {
+  new Date(date).toLocaleString("lv-LV", {
+    day: "2-digit",
+    month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   });

@@ -25,6 +25,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', function (Request $request) {
         return $request->user()->notifications;
     });
+    Route::post('/notifications/read', function (Request $request) {
+        $request->user()->unreadNotifications->markAsRead();
+        return response()->json(['message' => 'ok']);
+    });
 
     // User profile
     Route::get('/profile', [UserController::class, 'profile']);
@@ -59,5 +63,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/upload', [JobVacanciesController::class, 'upload']);
 
     // Admin
-    Route::middleware('admin')->get('/admin/dashboard', [AdminController::class, 'dashboard']);
+    Route::middleware('admin')->prefix('admin')->group(function () {
+        Route::get('/dashboard', [AdminController::class, 'dashboard']);
+        Route::get('/users', [AdminController::class, 'users']);
+        Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
+        Route::get('/vacancies', [AdminController::class, 'vacancies']);
+        Route::delete('/vacancies/{id}', [AdminController::class, 'deleteVacancy']);
+        Route::get('/applications', [AdminController::class, 'applications']);
+    });
 });
