@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\MessageSent;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
@@ -128,6 +129,8 @@ class ChatController extends Controller
         $conversation->touch(); // bump updated_at so it sorts to top
 
         $message->load('sender:id,username,firstname,lastname');
+
+        broadcast(new MessageSent($message))->toOthers();
 
         return response()->json($message, 201);
     }

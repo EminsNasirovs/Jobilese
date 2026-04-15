@@ -131,6 +131,7 @@ const currentUserId = Number(localStorage.getItem('user_id'));
 const token = localStorage.getItem('token');
 
 let pollInterval = null;
+let echoConvId = null;
 
 const authHeaders = { headers: { Authorization: `Bearer ${token}` } };
 
@@ -160,10 +161,34 @@ const fetchConversations = async () => {
   }
 };
 
+const listenToConversation = (convId) => {
+  if (!window.Echo) return;
+
+  // Leave previous channel
+  if (echoConvId !== null) {
+    window.Echo.leave(`conversation.${echoConvId}`);
+    echoConvId = null;
+  }
+
+  echoConvId = convId;
+  window.Echo.private(`conversation.${convId}`)
+    .listen('.MessageSent', (data) => {
+      // Avoid duplicate if we somehow receive our own (toOthers should prevent it)
+      if (!messages.value.find(m => m.id === data.id)) {
+        messages.value.push(data);
+        scrollToBottom();
+      }
+      // Update conversation list preview
+      const conv = conversations.value.find(c => c.id === data.conversation_id);
+      if (conv) conv.latest_message = data;
+    });
+};
+
 const selectConversation = async (conv) => {
   selectedConv.value = conv;
   conv.unread_count = 0;
   await loadMessages(conv.id);
+  listenToConversation(conv.id);
 };
 
 const loadMessages = async (convId) => {
@@ -193,17 +218,11 @@ const sendMessage = async () => {
   }
 };
 
-// Poll for new messages every 3 seconds when a conversation is open
+// Poll conversations list every 8s to refresh unread counts from other conversations
 const startPolling = () => {
   pollInterval = setInterval(async () => {
-    if (selectedConv.value) {
-      const before = messages.value.length;
-      await loadMessages(selectedConv.value.id);
-      // Only scroll if new messages arrived
-      if (messages.value.length > before) scrollToBottom();
-    }
     await fetchConversations();
-  }, 3000);
+  }, 8000);
 };
 
 onMounted(async () => {
@@ -211,7 +230,12 @@ onMounted(async () => {
   startPolling();
 });
 
-onUnmounted(() => clearInterval(pollInterval));
+onUnmounted(() => {
+  clearInterval(pollInterval);
+  if (window.Echo && echoConvId !== null) {
+    window.Echo.leave(`conversation.${echoConvId}`);
+  }
+});
 </script>
 
 <style scoped>
