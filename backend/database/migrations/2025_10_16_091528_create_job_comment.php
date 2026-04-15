@@ -16,7 +16,9 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('vacancy_id')->constrained('job_vacancies')->onDelete('cascade');
             $table->text('comment_text');
-            $table->timestamps(); 
+            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->foreign('parent_id')->references('id')->on('job_comment')->onDelete('cascade');
+            $table->timestamps();
         });
     }
 

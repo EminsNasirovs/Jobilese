@@ -9,6 +9,8 @@ use App\Http\Controllers\JobComments;
 use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CvController;
+use App\Http\Controllers\ChatController;
 
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -51,6 +53,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/vacancies/{id}', [JobVacanciesController::class, 'destroy']);
     Route::post('/vacancies/{id}/apply', [JobApplicationsController::class, 'apply']);
     Route::get('/applications', [JobApplicationsController::class, 'employerApplications']);
+    Route::get('/my-applications', [JobApplicationsController::class, 'userApplications']);
+    Route::post('/applications/{id}/respond', [JobApplicationsController::class, 'respond']);
     Route::get('/applications/{id}/cv/view', [JobApplicationsController::class, 'viewCv']);
     Route::get('/applications/{id}/cv-link', [JobApplicationsController::class, 'getCvLink']);
 
@@ -58,6 +62,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/comments', [JobComments::class, 'store']);
     Route::get('/vacancies/{id}/comments', [JobComments::class, 'index']);
     Route::delete('/comments/{id}', [JobComments::class, 'destroy']);
+
+    // Chat
+    Route::get('/chat/conversations', [ChatController::class, 'conversations']);
+    Route::post('/chat/start', [ChatController::class, 'startOrGet']);
+    Route::get('/chat/{id}/messages', [ChatController::class, 'messages']);
+    Route::post('/chat/{id}/send', [ChatController::class, 'send']);
+    Route::get('/chat/unread', [ChatController::class, 'unreadCount']);
 
     // File uploads
     Route::post('/upload', [JobVacanciesController::class, 'upload']);

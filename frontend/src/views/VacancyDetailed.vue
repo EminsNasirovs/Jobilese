@@ -88,21 +88,70 @@
 
           <div class="space-y-6">
             <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-300">Diskusija</h3>
-            <div class="space-y-8 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+            <div class="space-y-8 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar">
               <div v-for="comment in comments" :key="comment.id" class="border-l-2 border-blue-600 pl-6 py-2">
                 <p class="text-sm font-medium leading-relaxed">{{ comment.comment_text }}</p>
-                <p class="text-[10px] uppercase font-bold text-gray-400 mt-2 tracking-tighter">
-                  {{ comment.user?.username }} • {{ formatDate(comment.created_at) }}
-                </p>
+                <div class="flex items-center gap-4 mt-2">
+                  <p class="text-[10px] uppercase font-bold text-gray-400 tracking-tighter">
+                    {{ comment.user?.username }} • {{ formatDate(comment.created_at) }}
+                  </p>
+                  <button
+                    v-if="isLoggedIn"
+                    @click="startReply(comment)"
+                    class="text-[9px] uppercase font-bold tracking-widest text-blue-600 hover:text-black transition-colors"
+                  >
+                    Atbildēt
+                  </button>
+                  <button
+                    v-if="user && comment.user?.id === user.id"
+                    @click="deleteComment(comment.id)"
+                    class="text-[9px] uppercase font-bold tracking-widest text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    Dzēst
+                  </button>
+                </div>
+
+                <!-- Replies -->
+                <div v-if="comment.replies && comment.replies.length" class="mt-4 space-y-4 pl-4 border-l border-gray-100">
+                  <div v-for="reply in comment.replies" :key="reply.id" class="py-1">
+                    <p class="text-sm text-gray-600 leading-relaxed">{{ reply.comment_text }}</p>
+                    <div class="flex items-center gap-4 mt-1">
+                      <p class="text-[10px] uppercase font-bold text-gray-400 tracking-tighter">
+                        {{ reply.user?.username }} • {{ formatDate(reply.created_at) }}
+                      </p>
+                      <button
+                        v-if="user && reply.user?.id === user.id"
+                        @click="deleteComment(reply.id)"
+                        class="text-[9px] uppercase font-bold tracking-widest text-red-400 hover:text-red-600 transition-colors"
+                      >
+                        Dzēst
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Inline reply form -->
+                <div v-if="replyingTo === comment.id" class="mt-3 flex items-center gap-2">
+                  <input
+                    v-model="replyText"
+                    @keyup.enter="submitReply(comment.id)"
+                    type="text"
+                    :placeholder="`Atbildēt uz ${comment.user?.username}...`"
+                    class="flex-1 bg-transparent border-b border-gray-200 py-2 outline-none focus:border-blue-600 transition-colors text-sm"
+                    ref="replyInput"
+                  />
+                  <button @click="submitReply(comment.id)" class="text-[9px] uppercase font-bold tracking-widest text-blue-600 hover:text-black transition-colors">Sūtīt</button>
+                  <button @click="replyingTo = null" class="text-[9px] uppercase font-bold tracking-widest text-gray-400 hover:text-black transition-colors">Atcelt</button>
+                </div>
               </div>
             </div>
-            
+
             <div v-if="isLoggedIn" class="pt-4">
-              <input 
+              <input
                 v-model="newComment.comment_text"
                 @keyup.enter="addComment"
-                type="text" 
-                placeholder="Raksti ziņu..." 
+                type="text"
+                placeholder="Raksti ziņu..."
                 class="w-full bg-transparent border-b-2 border-gray-100 py-3 outline-none focus:border-blue-600 transition-colors text-sm"
               />
             </div>
@@ -267,6 +316,8 @@ const isLoggedIn = !!token;
 const isFavorited = ref(false);
 const comments = ref([]);
 const newComment = ref({ comment_text: "", vacancy_id: route.params.id });
+const replyingTo = ref(null);
+const replyText = ref("");
 
 const showApplicationModal = ref(false);
 const showEditModal = ref(false);
@@ -333,9 +384,41 @@ const deleteComment = async (id) => {
     await api.delete(`/comments/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    comments.value = comments.value.filter((c) => c.id !== id);
+    // Remove from top-level or from replies
+    comments.value = comments.value
+      .filter((c) => c.id !== id)
+      .map((c) => ({
+        ...c,
+        replies: c.replies ? c.replies.filter((r) => r.id !== id) : [],
+      }));
   } catch (err) {
     error("Neizdevās dzēst komentāru");
+  }
+};
+
+const startReply = (comment) => {
+  replyingTo.value = comment.id;
+  replyText.value = "";
+};
+
+const submitReply = async (parentId) => {
+  if (!replyText.value.trim()) return;
+  try {
+    const res = await api.post(
+      `/comments`,
+      { comment_text: replyText.value, vacancy_id: Number(route.params.id), parent_id: parentId },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const reply = res.data.data || res.data;
+    const parent = comments.value.find((c) => c.id === parentId);
+    if (parent) {
+      if (!parent.replies) parent.replies = [];
+      parent.replies.push(reply);
+    }
+    replyingTo.value = null;
+    replyText.value = "";
+  } catch (err) {
+    error("Neizdevās pievienot atbildi");
   }
 };
 // ====== EDIT & DELETE ======

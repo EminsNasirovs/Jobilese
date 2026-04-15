@@ -23,6 +23,25 @@
             label="Pieteikumi"
           />
           <NavLink
+            v-if="isLoggedIn && userRole !== 'uzņēmējs' && userRole !== 'admin'"
+            to="/my-applications"
+            label="Mani pieteikumi"
+          />
+          <!-- Chat link with unread badge -->
+          <RouterLink
+            v-if="isLoggedIn"
+            to="/chat"
+            class="relative text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-500 py-2"
+            :class="$route.path === '/chat' ? 'text-black' : 'text-gray-400 hover:text-black'"
+          >
+            Ziņojumi
+            <span
+              v-if="unreadMessages > 0"
+              class="absolute -top-1 -right-3 bg-blue-600 text-white text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-1"
+            >{{ unreadMessages }}</span>
+          </RouterLink>
+
+          <NavLink
             v-if="isLoggedIn && userRole === 'admin'"
             to="/admin"
             label="Admin"
@@ -139,15 +158,31 @@ const hideHeader = computed(() => route.meta.hideHeader);
 
 const isLoggedIn = ref(false);
 const userRole = ref(null);
+const unreadMessages = ref(0);
 
 const unreadCount = computed(() =>
   notifications.value.filter((n) => !n.read_at).length
 );
 
+let msgPollInterval = null;
+
+const fetchUnreadMessages = async () => {
+  try {
+    const res = await api.get("/chat/unread");
+    unreadMessages.value = res.data.count;
+  } catch (e) {
+    // silent
+  }
+};
+
 onMounted(async () => {
   isLoggedIn.value = !!localStorage.getItem("token");
   userRole.value = localStorage.getItem("role");
-  if (isLoggedIn.value) fetchNotifications();
+  if (isLoggedIn.value) {
+    fetchNotifications();
+    fetchUnreadMessages();
+    msgPollInterval = setInterval(fetchUnreadMessages, 5000);
+  }
 });
 
 const fetchNotifications = async () => {

@@ -74,19 +74,12 @@
     
     <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80 transition-opacity group-hover:opacity-90"></div>
     
-    <div class="absolute bottom-10 left-10 text-white z-10">
-      <p class="text-xs font-bold uppercase tracking-[0.2em] mb-2">Atlasītas iespējas</p>
-      <h3 class="text-3xl font-serif italic">Kvalitāte pāri kvantitātei.</h3>
-    </div>
+
   </div>
   
   <div class="space-y-12">
     <h2 class="text-5xl font-light tracking-tight leading-tight">Mēs savienojam <span class="font-serif italic">vizionārus uzņēmumus</span> ar Latvijas labākajiem talantiem.</h2>
     <div class="space-y-8 max-w-md">
-      <div class="space-y-2">
-        <h4 class="font-bold text-sm uppercase">Gudra paziņojumu sistēma</h4>
-        <p class="text-gray-500 leading-relaxed italic">Negaidi — saņem informāciju par jaunām vakancēm savā e-pastā reāllaikā.</p>
-      </div>
       <div class="space-y-2">
         <h4 class="font-bold text-sm uppercase">Tieša saziņa</h4>
         <p class="text-gray-500 leading-relaxed italic">Mēs noņemam barjeras. Sazinies ar lēmumu pieņēmējiem tieši un bez kavēšanās.</p>

@@ -7,6 +7,8 @@ import Regis from '../views/Regis.vue';
 import Profile from '../views/Profile.vue';
 import VacancyDetailed from '../views/VacancyDetailed.vue';
 import Applications from '../views/Applications.vue';
+import MyApplications from '../views/MyApplications.vue';
+import Chat from '../views/Chat.vue';
 import AdminPanel from "../views/AdminPanel.vue";
 import CvEditors from '../views/CvEditors.vue';
 
@@ -24,6 +26,8 @@ const routes = [
   { path: '/profile', name: 'profile', component: Profile },
   { path: '/vacancy/:id', component: VacancyDetailed, props: true },
   { path: '/applications', name: 'applications', component: Applications },
+  { path: '/my-applications', name: 'my-applications', component: MyApplications, meta: { requiresAuth: true } },
+  { path: '/chat', name: 'chat', component: Chat, meta: { requiresAuth: true } },
   { path: '/cv', name: 'cv', component: CvEditors },
 ];
 

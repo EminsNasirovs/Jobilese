@@ -15,6 +15,7 @@ class Comments extends Model
         'vacancy_id',
         'user_id',
         'comment_text',
+        'parent_id',
     ];
 
     public function vacancy()
@@ -25,5 +26,10 @@ class Comments extends Model
     public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function replies()
+    {
+        return $this->hasMany(Comments::class, 'parent_id')->with('user:id,username');
     }
 }

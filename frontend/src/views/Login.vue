@@ -109,6 +109,7 @@ const login = async () => {
     });
     localStorage.setItem("role", response.data.user.role);
     localStorage.setItem("token", response.data.token);
+    localStorage.setItem("user_id", response.data.user.id);
     window.location.href = "/profile";
   } catch (err) {
     error("Nepareizs lietotājvārds vai parole");

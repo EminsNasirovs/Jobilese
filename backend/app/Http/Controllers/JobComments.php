@@ -19,21 +19,20 @@ class JobComments extends Controller
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        // Validē ievadi
         $validated = $request->validate([
             'comment_text' => 'required|string|max:1000',
             'vacancy_id'   => 'required|exists:job_vacancies,id',
+            'parent_id'    => 'nullable|exists:job_comment,id',
         ]);
 
-        // Izveido komentāru
         $comment = new Comments();
         $comment->vacancy_id = $validated['vacancy_id'];
         $comment->comment_text = $validated['comment_text'];
         $comment->user_id = $user->id;
+        $comment->parent_id = $validated['parent_id'] ?? null;
         $comment->save();
 
-        // Ielādē saistīto lietotāju (lai frontend uzreiz redzētu vārdu)
-        $comment->load('user:id,username');
+        $comment->load('user:id,username', 'replies');
 
         return response()->json([
             'message' => 'Komentārs pievienots veiksmīgi!',
@@ -42,12 +41,13 @@ class JobComments extends Controller
     }
 
     /**
-     * Atgriež visus komentārus konkrētajai vakancei
+     * Atgriež visus komentārus konkrētajai vakancei (tikai top-level, ar replies)
      */
     public function index($vacancyId)
     {
         $comments = Comments::where('vacancy_id', $vacancyId)
-            ->with('user:id,username')
+            ->whereNull('parent_id')
+            ->with('user:id,username', 'replies')
             ->latest()
             ->get();
 

@@ -16,7 +16,9 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->text('cover_letter')->nullable();
-            $table->string('cv_path')->nullable(); // PDF upload path
+            $table->string('cv_path')->nullable();
+            $table->enum('status', ['pending', 'accepted', 'denied'])->default('pending');
+            $table->text('employer_response')->nullable();
             $table->timestamps();
         });
     }
