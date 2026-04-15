@@ -21,6 +21,13 @@ class JobVacancy extends Model
         'county',
     ];
 
+    protected $appends = ['logo_url'];
+
+    public function getLogoUrlAttribute()
+    {
+        return $this->logo ? asset("storage/{$this->logo}") : null;
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

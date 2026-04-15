@@ -9,3 +9,5 @@ Claude.md
 *.output
 test-results/
 tests/
+playwright.config.js
+

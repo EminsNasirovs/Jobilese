@@ -136,7 +136,7 @@ class JobApplicationsController extends Controller
         }
 
         $applications = JobApplication::where('user_id', $user->id)
-            ->with(['vacancy:id,user_id,title,company,county,logo_url'])
+            ->with(['vacancy:id,user_id,title,company,county,logo'])
             ->latest()
             ->get(['id', 'vacancy_id', 'cover_letter', 'cv_path', 'status', 'employer_response', 'created_at']);
 

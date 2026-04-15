@@ -12,11 +12,6 @@ class JobVacanciesController extends Controller
     {
         $vacancies = JobVacancy::with('user')->latest()->get();
 
-        $vacancies->transform(function ($vacancy) {
-            $vacancy->logo_url = $vacancy->logo ? asset("storage/{$vacancy->logo}") : null;
-            return $vacancy;
-        });
-
         return response()->json($vacancies);
     }
 
@@ -28,8 +23,6 @@ class JobVacanciesController extends Controller
         if (!$vacancy) {
             return response()->json(['message' => 'Vacancy not found'], 404);
         }
-
-        $vacancy->logo_url = $vacancy->logo ? asset("storage/{$vacancy->logo}") : null;
 
         return response()->json($vacancy);
     }

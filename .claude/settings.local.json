@@ -18,7 +18,8 @@
       "Bash(npm install:*)",
       "Bash(curl:*)",
       "Bash(rm:*)",
-      "Bash(composer require:*)"
+      "Bash(composer require:*)",
+      "Bash(npx playwright *)"
     ]
   }
 }
