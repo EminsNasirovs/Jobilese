@@ -10,4 +10,8 @@ Claude.md
 test-results/
 tests/
 playwright.config.js
-
+2
+add_sections.php
+add_saturs.php
+.claude/settings.local.json
+instructions_for_claude/
