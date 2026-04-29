@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CvDetail extends Model
 {
+   protected $guarded = [];
+
    protected $casts = [
     'experience' => 'array',
     'education' => 'array',
