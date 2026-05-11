@@ -19,7 +19,7 @@ class AuthController extends Controller
             'password'  => 'required|string|min:6',
             'gender'    => 'nullable|string',
             'birth_date'=> 'nullable|date',
-            'role'      => 'required|in:bezdarbnieks,darbinieks,uzņēmējs,admin',
+            'role'      => 'required|in:bezdarbnieks,darbinieks,uzņēmējs',
             'company_name'    => 'nullable|required_if:role,uzņēmējs|string|max:255',
             'company_number'  => 'nullable|required_if:role,uzņēmējs|string|max:255',
             'company_address' => 'nullable|required_if:role,uzņēmējs|string|max:255',

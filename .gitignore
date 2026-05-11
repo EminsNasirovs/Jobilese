@@ -1,17 +1,31 @@
-# Instructions folder (personal documents)
+# Claude-related (personal/local AI tooling, never commit)
+CLAUDE.md
+CLAUDE_CONTEXT.md
+.claude/
+.claude*/
+claude.md
+Claude.md
+instructions-for-claude/
+instructions_for_claude/
 instructions for claude/
+**/CLAUDE.md
+**/.claude/
 
 # Node modules
 node_modules/
 package-lock.json
-Claude.md
+
 # Generated files
 *.output
 test-results/
 tests/
 playwright.config.js
-2
+
+# Local helper scripts (personal)
 add_sections.php
 add_saturs.php
-.claude/settings.local.json
-instructions_for_claude/
+format_docx.php
+
+# OS files
+.DS_Store
+Thumbs.db

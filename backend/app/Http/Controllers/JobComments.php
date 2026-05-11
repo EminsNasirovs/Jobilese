@@ -73,7 +73,7 @@ class JobComments extends Controller
             return response()->json(['message' => 'Komentārs nav atrasts'], 404);
         }
 
-        if ($comment->user_id !== $user->id) {
+        if ($comment->user_id !== $user->id && $user->role !== 'admin') {
             return response()->json(['message' => 'Nav atļauts dzēst šo komentāru'], 403);
         }
 

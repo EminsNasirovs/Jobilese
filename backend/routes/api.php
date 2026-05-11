@@ -78,8 +78,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
         Route::get('/users', [AdminController::class, 'users']);
         Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
+        Route::patch('/users/{id}/role', [AdminController::class, 'updateUserRole']);
         Route::get('/vacancies', [AdminController::class, 'vacancies']);
         Route::delete('/vacancies/{id}', [AdminController::class, 'deleteVacancy']);
         Route::get('/applications', [AdminController::class, 'applications']);
+        Route::delete('/applications/{id}', [AdminController::class, 'deleteApplication']);
+        Route::get('/comments', [AdminController::class, 'comments']);
+        Route::delete('/comments/{id}', [AdminController::class, 'deleteComment']);
     });
 });

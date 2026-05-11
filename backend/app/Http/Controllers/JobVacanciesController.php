@@ -47,20 +47,30 @@ class JobVacanciesController extends Controller
         $validated['company'] = $user->company_name ?? ($request->input('company') ?? 'Nezināms uzņēmums');
 
         $vacancy = JobVacancy::create($validated);
-        // ...
+
+        return response()->json([
+            'message' => 'Vakance veiksmīgi izveidota',
+            'data'    => $vacancy,
+        ], 201);
     }
 
     public function update(Request $request, $id)
     {
+        $user = $request->user();
         $vacancy = JobVacancy::findOrFail($id);
+
+        if ($vacancy->user_id !== $user->id && $user->role !== 'admin') {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'salary' => 'required|string|max:255',
+            'salary' => 'required|numeric',
             'salary_type' => 'required|string|in:Brutto,Neto',
             'description' => 'required|string',
             'category' => 'required|string',
             'county' => 'required|string',
+            'logo' => 'nullable|string|max:255',
         ]);
 
         $vacancy->update($validated);

@@ -28,7 +28,6 @@ class UserController extends Controller
             'email' => 'sometimes|email|max:255|unique:users,email,' . $user->id,
             'gender' => 'nullable|string',
             'birth_date' => 'nullable|date',
-            'role' => 'nullable|string',
             'company_name' => 'nullable|string|max:255',
             'company_number' => 'nullable|string|max:255',
             'company_address' => 'nullable|string|max:255',
