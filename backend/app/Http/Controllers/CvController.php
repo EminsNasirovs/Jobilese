@@ -19,13 +19,22 @@ class CvController extends Controller
     // Save or Update the CV
     public function store(Request $request)
     {
+        $validated = $request->validate([
+            'summary'    => 'nullable|string|max:2000',
+            'experience' => 'nullable|array',
+            'education'  => 'nullable|array',
+            'skills'     => 'nullable|array',
+            'template'   => 'nullable|in:editorial,sidebar,minimal',
+        ]);
+
         $cv = CvDetail::updateOrCreate(
             ['user_id' => Auth::id()],
             [
-                'summary'    => $request->summary,
-                'experience' => $request->experience, // Laravel casts this to JSON
-                'education'  => $request->education,
-                'skills'     => $request->skills,
+                'summary'    => $validated['summary']    ?? null,
+                'experience' => $validated['experience'] ?? [],
+                'education'  => $validated['education']  ?? [],
+                'skills'     => $validated['skills']     ?? [],
+                'template'   => $validated['template']   ?? 'editorial',
             ]
         );
 

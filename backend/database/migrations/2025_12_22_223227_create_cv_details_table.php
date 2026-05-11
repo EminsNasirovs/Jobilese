@@ -18,6 +18,7 @@ return new class extends Migration
         $table->json('experience')->nullable(); // Array of {company, role, years, desc}
         $table->json('education')->nullable();  // Array of {school, degree, year}
         $table->json('skills')->nullable();     // Array of strings ['Vue', 'Laravel']
+        $table->string('template', 32)->default('editorial'); // Layout: editorial / sidebar / minimal
         $table->timestamps();
     });
     }
