@@ -125,7 +125,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import api from "@/services/api.js";
+import api, { storageUrl } from "@/services/api.js";
 import { useToast } from "@/composables/useToast";
 
 const { error, success } = useToast();
@@ -141,7 +141,7 @@ const openCv = (id) => {
     error("CV nav atrasts");
     return;
   }
-  pdfUrl.value = `http://127.0.0.1:8000/storage/${app.cv_path}`;
+  pdfUrl.value = storageUrl(app.cv_path);
   showCvModal.value = true;
 };
 

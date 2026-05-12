@@ -29,3 +29,4 @@ format_docx.php
 # OS files
 .DS_Store
 Thumbs.db
+DEPLOY.md

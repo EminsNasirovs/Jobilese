@@ -24,7 +24,7 @@
     <div class="flex flex-col h-full space-y-6">
       <div class="w-16 h-16 bg-gray-50 flex items-center justify-center overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
         <img
-          :src="logo ? `http://127.0.0.1:8000/storage/${logo}` : '/default-logo.png'"
+          :src="logo ? storageUrl(logo) : '/default-logo.png'"
           alt="company logo"
           class="w-full h-full object-contain p-2"
         />
@@ -69,7 +69,7 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
-import api from "@/services/api";
+import api, { storageUrl } from "@/services/api";
 
 const props = defineProps({
   id: Number,
