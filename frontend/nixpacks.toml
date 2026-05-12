@@ -1,0 +1,14 @@
+providers = ["node"]
+
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+# Serves the built SPA on $PORT (Coolify injects PORT). SPA fallback handled by `-s`.
+cmd = "npx --yes serve -s dist -l ${PORT:-3000}"
