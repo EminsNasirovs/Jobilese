@@ -552,18 +552,18 @@ const fetchSavedCvs = async () => {
 };
 
 const renderSavedCvToPdfBlob = async () => {
-  // Wait a tick so the hidden CvDocument renders
-  await new Promise(r => setTimeout(r, 60));
+  await new Promise(r => setTimeout(r, 300));
   const el = document.getElementById('apply-cv-paper');
   if (!el) throw new Error('CV render not found');
   await document.fonts.ready;
-  const dataUrl = await toPng(el, { quality: 1, pixelRatio: 2, backgroundColor: '#ffffff' });
+  const dataUrl = await toPng(el, { quality: 1, pixelRatio: 1.5, backgroundColor: '#ffffff' });
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const props = pdf.getImageProperties(dataUrl);
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = (props.height * pdfWidth) / props.width;
   pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
-  return pdf.output('blob');
+  const buf = pdf.output('arraybuffer');
+  return new Blob([buf], { type: 'application/pdf' });
 };
 
 const submitApplication = async () => {

@@ -28,7 +28,7 @@ class JobApplicationsController extends Controller
 
         $validated = $request->validate([
             'cover_letter' => 'nullable|string|max:2000',
-            'cv' => 'nullable|file|mimes:pdf|max:4096', // up to 4MB
+            'cv' => 'nullable|file|mimes:pdf|max:8192', // up to 8MB
         ]);
 
         $cvPath = null;
@@ -64,7 +64,7 @@ class JobApplicationsController extends Controller
             ->whereHas('vacancy', fn($q) => $q->where('user_id', $user->id))
             ->with(['vacancy:id,title', 'user:id,firstname,lastname,email'])
             ->latest()
-            ->get(['id', 'vacancy_id', 'user_id', 'cover_letter', 'cv_path', 'created_at']);
+            ->get(['id', 'vacancy_id', 'user_id', 'cover_letter', 'cv_path', 'status', 'employer_response', 'created_at']);
 
         // Add a preview URL for CV viewer
         $applications->transform(function ($app) {

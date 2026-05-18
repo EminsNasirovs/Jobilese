@@ -34,7 +34,6 @@
               <p class="text-sm text-gray-500">{{ app.user?.email }}</p>
             </div>
 
-            <!-- Status badge -->
             <div class="flex items-center gap-3 shrink-0">
               <span
                 class="text-[10px] font-bold uppercase tracking-widest px-4 py-2 rounded-full"
@@ -70,35 +69,20 @@
             <p>{{ app.employer_response }}</p>
           </div>
 
-          <!-- Respond section -->
-          <div class="mt-6 border-t border-black/[0.05] pt-6 space-y-4">
-            <p class="text-[10px] uppercase font-bold tracking-widest text-gray-400">Atbilde kandidātam</p>
-            <textarea
-              v-model="app._responseText"
-              rows="3"
-              placeholder="Rakstiet savu atbildi kandidātam..."
-              class="w-full bg-transparent border border-gray-100 p-4 text-sm outline-none focus:border-black transition-colors resize-none"
-            ></textarea>
-            <div class="flex gap-3 flex-wrap">
-              <button
-                @click="respond(app, 'accepted')"
-                class="px-8 py-3 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-green-700 transition-colors"
-              >
-                Pieņemt
-              </button>
-              <button
-                @click="respond(app, 'denied')"
-                class="px-8 py-3 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-red-600 transition-colors"
-              >
-                Noraidīt
-              </button>
-              <button
-                @click="startChat(app)"
-                class="px-8 py-3 border border-black text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
-              >
-                Rakstīt ziņu
-              </button>
-            </div>
+          <!-- Action buttons — only for pending applications -->
+          <div v-if="app.status === 'pending'" class="mt-6 border-t border-black/[0.05] pt-6 flex gap-3">
+            <button
+              @click="openAcceptModal(app)"
+              class="px-8 py-3 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-green-700 transition-colors"
+            >
+              Pieņemt
+            </button>
+            <button
+              @click="denyApp(app)"
+              class="px-8 py-3 bg-red-500 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-red-600 transition-colors"
+            >
+              Noraidīt
+            </button>
           </div>
         </div>
       </div>
@@ -119,69 +103,134 @@
         </div>
       </div>
     </div>
+
+    <!-- Accept Modal -->
+    <div
+      v-if="showAcceptModal"
+      class="fixed inset-0 z-[200] flex items-center justify-center p-6"
+      @click.self="showAcceptModal = false"
+    >
+      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showAcceptModal = false"></div>
+      <div class="relative bg-white w-full max-w-lg shadow-[0_40px_100px_rgba(0,0,0,0.15)] z-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div class="p-8 space-y-6">
+          <div class="space-y-1">
+            <p class="text-[10px] uppercase font-bold tracking-[0.3em] text-gray-400">Pieņemt kandidātu</p>
+            <h2 class="text-2xl font-medium tracking-tight">
+              {{ acceptingApp?.user?.firstname }} {{ acceptingApp?.user?.lastname }}
+            </h2>
+            <p class="text-sm text-gray-400">{{ acceptingApp?.vacancy?.title }}</p>
+          </div>
+
+          <div class="space-y-2">
+            <p class="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-400">
+              Ziņa kandidātam <span class="normal-case font-normal text-gray-300">(neobligāti)</span>
+            </p>
+            <textarea
+              v-model="acceptMessage"
+              rows="4"
+              placeholder="Apsveicam! Esam priecīgi jūs uzaicināt uz darba interviju..."
+              class="w-full bg-transparent border border-gray-100 p-4 text-sm outline-none focus:border-black transition-colors resize-none"
+            ></textarea>
+          </div>
+
+          <div class="flex gap-3">
+            <button
+              @click="confirmAccept"
+              :disabled="acceptLoading"
+              class="flex-1 px-8 py-4 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              {{ acceptLoading ? 'Apstrādā...' : 'Pieņemt' }}
+            </button>
+            <button
+              @click="showAcceptModal = false"
+              class="px-8 py-4 border border-black text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
+            >
+              Atcelt
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
 import api, { storageUrl } from "@/services/api.js";
 import { useToast } from "@/composables/useToast";
 
 const { error, success } = useToast();
-const router = useRouter();
 
 const applications = ref([]);
 const showCvModal = ref(false);
 const pdfUrl = ref(null);
 
+const showAcceptModal = ref(false);
+const acceptingApp = ref(null);
+const acceptMessage = ref("");
+const acceptLoading = ref(false);
+
 const openCv = (id) => {
   const app = applications.value.find((a) => a.id === id);
-  if (!app || !app.cv_path) {
-    error("CV nav atrasts");
-    return;
-  }
+  if (!app?.cv_path) { error("CV nav atrasts"); return; }
   pdfUrl.value = storageUrl(app.cv_path);
   showCvModal.value = true;
 };
 
-const startChat = async (app) => {
+const openAcceptModal = (app) => {
+  acceptingApp.value = app;
+  acceptMessage.value = "";
+  showAcceptModal.value = true;
+};
+
+const confirmAccept = async () => {
+  if (!acceptingApp.value) return;
+  acceptLoading.value = true;
   try {
-    const res = await api.post(
-      '/chat/start',
-      { other_user_id: app.user_id, vacancy_id: app.vacancy_id },
-      { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
-    );
-    router.push('/chat');
-  } catch (e) {
-    error('Neizdevās sākt sarunu');
+    const app = acceptingApp.value;
+    const msg = acceptMessage.value.trim();
+
+    await api.post(`/applications/${app.id}/respond`, {
+      status: "accepted",
+      employer_response: msg || null,
+    });
+    app.status = "accepted";
+    app.employer_response = msg || null;
+
+    if (msg) {
+      const chatRes = await api.post("/chat/start", {
+        other_user_id: app.user_id,
+        vacancy_id: app.vacancy_id,
+      });
+      await api.post(`/chat/${chatRes.data.id}/send`, { body: msg });
+    }
+
+    success("Kandidāts pieņemts!");
+    showAcceptModal.value = false;
+    acceptingApp.value = null;
+  } catch (err) {
+    error(err.response?.data?.message || "Neizdevās pieņemt kandidātu");
+  } finally {
+    acceptLoading.value = false;
   }
 };
 
-const respond = async (app, status) => {
+const denyApp = async (app) => {
   try {
-    const res = await api.post(
-      `/applications/${app.id}/respond`,
-      { status, employer_response: app._responseText || null },
-      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-    );
-    app.status = status;
-    app.employer_response = app._responseText || null;
-    app._responseText = "";
-    success(status === "accepted" ? "Kandidāts pieņemts!" : "Kandidāts noraidīts.");
+    await api.post(`/applications/${app.id}/respond`, { status: "denied", employer_response: null });
+    app.status = "denied";
+    success("Kandidāts noraidīts.");
   } catch (err) {
-    error(err.response?.data?.message || "Neizdevās nosūtīt atbildi");
+    error(err.response?.data?.message || "Neizdevās noraidīt");
   }
 };
 
 onMounted(async () => {
   try {
-    const res = await api.get("/applications", {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-    });
-    applications.value = res.data.map((a) => ({ ...a, _responseText: "" }));
+    const res = await api.get("/applications");
+    applications.value = res.data;
   } catch (err) {
-    console.error("Failed to fetch applications:", err);
+    error("Neizdevās ielādēt pieteikumus");
   }
 });
 </script>
@@ -195,13 +244,5 @@ onMounted(async () => {
 
 main {
   font-family: 'Inter', sans-serif;
-}
-
-.line-clamp-2 {
-  display: -webkit-box;
-  line-clamp: 2;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 </style>

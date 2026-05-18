@@ -5,29 +5,43 @@
   >
     <div class="mx-auto max-w-7xl px-6 lg:px-12">
       <div class="flex h-20 items-center justify-between">
-        
+
         <RouterLink to="/" class="flex items-center gap-3 group">
-  <span class="text-2xl font-bold tracking-[-0.05em] uppercase italic font-serif text-[#111111] group-hover:text-black transition-colors">
-    Jobilese<span class="text-blue-600">.</span>
-  </span>
-</RouterLink>
+          <span class="text-2xl font-bold tracking-[-0.05em] uppercase italic font-serif text-[#111111] group-hover:text-black transition-colors">
+            Jobilese<span class="text-blue-600">.</span>
+          </span>
+        </RouterLink>
 
         <nav class="hidden md:flex items-center gap-10">
           <NavLink to="/" label="Sākums" />
           <NavLink to="/vakances" label="Vakances" />
           <NavLink to="/favoriti" label="Favorīti" />
-          
-          <NavLink
+
+          <!-- Pieteikumi with unread badge (employers) -->
+          <RouterLink
             v-if="isLoggedIn && userRole === 'uzņēmējs'"
             to="/applications"
-            label="Pieteikumi"
-          />
+            class="relative text-[11px] font-bold uppercase tracking-[0.2em] transition-all duration-500 py-2"
+            :class="$route.path === '/applications' ? 'text-black' : 'text-gray-400 hover:text-black'"
+          >
+            Pieteikumi
+            <span
+              class="absolute bottom-0 left-0 h-[1.5px] bg-blue-600 transition-all duration-700"
+              :class="$route.path === '/applications' ? 'w-full' : 'w-0'"
+            ></span>
+            <span
+              v-if="unreadCount > 0"
+              class="absolute -top-1 -right-3 bg-blue-600 text-white text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-1"
+            >{{ unreadCount }}</span>
+          </RouterLink>
+
           <NavLink
             v-if="isLoggedIn && userRole !== 'uzņēmējs' && userRole !== 'admin'"
             to="/my-applications"
             label="Mani pieteikumi"
           />
-          <!-- Chat link with unread badge -->
+
+          <!-- Chat with unread badge + animated underline -->
           <RouterLink
             v-if="isLoggedIn"
             to="/chat"
@@ -35,6 +49,10 @@
             :class="$route.path === '/chat' ? 'text-black' : 'text-gray-400 hover:text-black'"
           >
             Ziņojumi
+            <span
+              class="absolute bottom-0 left-0 h-[1.5px] bg-blue-600 transition-all duration-700"
+              :class="$route.path === '/chat' ? 'w-full' : 'w-0'"
+            ></span>
             <span
               v-if="unreadMessages > 0"
               class="absolute -top-1 -right-3 bg-blue-600 text-white text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-1"
@@ -46,15 +64,12 @@
             to="/admin"
             label="Admin"
           />
-          <NavLink
-            v-if="isLoggedIn"
-            to="/cv"
-            label="CV"
-          />
+          <NavLink v-if="isLoggedIn" to="/cv" label="CV" />
         </nav>
 
         <div class="flex items-center gap-8">
-          
+
+          <!-- Notification bell -->
           <div v-if="isLoggedIn" class="relative">
             <button
               @click="toggleNotifications"
@@ -76,13 +91,6 @@
             >
               <div class="flex justify-between items-center mb-4 pb-2 border-b border-black/5">
                 <span class="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-400">Paziņojumi</span>
-                <button
-                  v-if="unreadCount > 0"
-                  @click="markAllRead"
-                  class="text-[9px] uppercase font-bold tracking-widest text-blue-600 hover:text-black transition-colors"
-                >
-                  Atzīmēt visus
-                </button>
               </div>
 
               <div v-if="notifications.length === 0" class="py-6 text-center text-xs text-gray-400 italic">
@@ -94,7 +102,6 @@
                   v-for="n in notifications"
                   :key="n.id"
                   class="p-2 hover:bg-gray-50 transition-colors group cursor-pointer rounded"
-                  :class="{ 'border-l-2 border-blue-600 pl-3': !n.read_at }"
                 >
                   <p class="text-xs font-bold text-black group-hover:text-blue-600 transition-colors">
                     {{ n.data.applicant_name || n.data.message }}
@@ -148,10 +155,11 @@
 
 <script setup>
 import { RouterLink, useRoute } from "vue-router";
-import { ref, computed, onMounted, defineComponent, h } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, defineComponent, h } from "vue";
 import api from "@/services/api";
 
 const notifications = ref([]);
+const notificationsLoaded = ref(false);
 const showDropdown = ref(false);
 const route = useRoute();
 const hideHeader = computed(() => route.meta.hideHeader);
@@ -159,37 +167,34 @@ const hideHeader = computed(() => route.meta.hideHeader);
 const isLoggedIn = ref(false);
 const userRole = ref(null);
 const unreadMessages = ref(0);
+const unreadCount = ref(0);
 
-const unreadCount = computed(() =>
-  notifications.value.filter((n) => !n.read_at).length
-);
+let pollInterval = null;
 
-let msgPollInterval = null;
+const fetchUnreadCount = async () => {
+  try {
+    const res = await api.get("/notifications/unread-count");
+    unreadCount.value = res.data.count;
+  } catch {
+    // silent
+  }
+};
 
 const fetchUnreadMessages = async () => {
   try {
     const res = await api.get("/chat/unread");
     unreadMessages.value = res.data.count;
-  } catch (e) {
+  } catch {
     // silent
   }
 };
 
-onMounted(async () => {
-  isLoggedIn.value = !!localStorage.getItem("token");
-  userRole.value = localStorage.getItem("role");
-  if (isLoggedIn.value) {
-    fetchNotifications();
-    fetchUnreadMessages();
-    msgPollInterval = setInterval(fetchUnreadMessages, 5000);
-  }
-});
-
 const fetchNotifications = async () => {
   try {
-    const response = await api.get("/notifications");
-    notifications.value = response.data;
-  } catch (e) {
+    const res = await api.get("/notifications");
+    notifications.value = res.data;
+    notificationsLoaded.value = true;
+  } catch {
     // silent
   }
 };
@@ -197,24 +202,46 @@ const fetchNotifications = async () => {
 const markAllRead = async () => {
   try {
     await api.post("/notifications/read");
+    unreadCount.value = 0;
     notifications.value = notifications.value.map((n) => ({
       ...n,
       read_at: new Date().toISOString(),
     }));
-  } catch (e) {
+  } catch {
     // silent
   }
 };
+
+const toggleNotifications = async () => {
+  showDropdown.value = !showDropdown.value;
+  if (showDropdown.value) {
+    if (!notificationsLoaded.value) await fetchNotifications();
+    if (unreadCount.value > 0) markAllRead();
+  }
+};
+
+onMounted(() => {
+  isLoggedIn.value = !!localStorage.getItem("token");
+  userRole.value = localStorage.getItem("role");
+  if (isLoggedIn.value) {
+    fetchUnreadCount();
+    fetchUnreadMessages();
+    pollInterval = setInterval(() => {
+      fetchUnreadCount();
+      fetchUnreadMessages();
+    }, 10000);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (pollInterval) clearInterval(pollInterval);
+});
 
 const logout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("role");
   isLoggedIn.value = false;
   window.location.href = "/";
-};
-
-const toggleNotifications = () => {
-  showDropdown.value = !showDropdown.value;
 };
 
 const formatDate = (date) =>

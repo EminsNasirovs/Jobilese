@@ -27,6 +27,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notifications', function (Request $request) {
         return $request->user()->notifications;
     });
+    Route::get('/notifications/unread-count', function (Request $request) {
+        return response()->json(['count' => $request->user()->unreadNotifications()->count()]);
+    });
     Route::post('/notifications/read', function (Request $request) {
         $request->user()->unreadNotifications->markAsRead();
         return response()->json(['message' => 'ok']);
