@@ -186,15 +186,57 @@
             ></textarea>
           </div>
 
-          <div class="space-y-2">
-            <label class="text-[10px] uppercase font-bold text-gray-400 tracking-widest">CV (PDF)</label>
-            <div class="border-2 border-dashed border-gray-100 p-6 text-center hover:border-blue-600 transition-colors cursor-pointer relative">
+          <div class="space-y-3">
+            <label class="text-[10px] uppercase font-bold text-gray-400 tracking-widest">CV</label>
+
+            <!-- CV source switcher -->
+            <div class="flex gap-2 text-[10px] uppercase font-bold tracking-widest">
+              <button
+                type="button"
+                @click="cvSource = 'saved'"
+                class="px-4 py-2 border transition-colors"
+                :class="cvSource === 'saved' ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500 hover:border-black'"
+              >Saglabāts CV</button>
+              <button
+                type="button"
+                @click="cvSource = 'upload'"
+                class="px-4 py-2 border transition-colors"
+                :class="cvSource === 'upload' ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500 hover:border-black'"
+              >Augšupielādēt PDF</button>
+              <button
+                type="button"
+                @click="cvSource = 'none'"
+                class="px-4 py-2 border transition-colors"
+                :class="cvSource === 'none' ? 'bg-black text-white border-black' : 'border-gray-200 text-gray-500 hover:border-black'"
+              >Bez CV</button>
+            </div>
+
+            <!-- Saved CV picker -->
+            <div v-if="cvSource === 'saved'" class="space-y-2">
+              <select v-if="savedCvs.length" v-model.number="selectedSavedCvId"
+                      class="w-full bg-transparent border border-gray-200 p-3 text-sm outline-none focus:border-black">
+                <option v-for="cv in savedCvs" :key="cv.id" :value="cv.id">
+                  {{ cv.title }}{{ cv.is_default ? ' ★' : '' }}
+                </option>
+              </select>
+              <p v-else class="text-xs text-gray-400 italic">
+                Vēl nav saglabāta CV. <RouterLink to="/cv" class="text-blue-600 underline">Izveidojiet to CV redaktorā</RouterLink>.
+              </p>
+            </div>
+
+            <!-- Upload PDF -->
+            <div v-else-if="cvSource === 'upload'" class="border-2 border-dashed border-gray-100 p-6 text-center hover:border-blue-600 transition-colors cursor-pointer relative">
               <input type="file" accept=".pdf" @change="handleFile" class="absolute inset-0 opacity-0 cursor-pointer" />
               <p class="text-[10px] uppercase font-bold text-gray-400">
                 {{ cvFile ? cvFile.name : 'Pievienot CV failu' }}
               </p>
             </div>
           </div>
+        </div>
+
+        <!-- Hidden CV render target for PDF export -->
+        <div v-if="cvSource === 'saved' && selectedSavedCvData" class="cv-offscreen">
+          <CvDocument :cv-data="selectedSavedCvData" :profile="user || {}" paper-id="apply-cv-paper" />
         </div>
 
         <div class="flex gap-4 pt-2">
@@ -295,13 +337,25 @@ h1, h2, h3, button {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #2563eb;
 }
+
+/* Off-screen render slot for converting saved CV to PDF */
+.cv-offscreen {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  pointer-events: none;
+  opacity: 0;
+}
 </style>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { ref, computed, onMounted } from "vue";
+import { useRoute, useRouter, RouterLink } from "vue-router";
+import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 import api from "@/services/api";
 import { useToast } from "@/composables/useToast";
+import CvDocument from "@/components/CvDocument.vue";
 
 const { success, error, info } = useToast();
 
@@ -324,6 +378,12 @@ const showApplicationModal = ref(false);
 const showEditModal = ref(false);
 const coverLetter = ref("");
 const cvFile = ref(null);
+const cvSource = ref('saved'); // 'saved' | 'upload' | 'none'
+const savedCvs = ref([]);
+const selectedSavedCvId = ref(null);
+const selectedSavedCvData = computed(() =>
+  savedCvs.value.find(c => c.id === selectedSavedCvId.value) || null
+);
 
 const editVacancyData = ref({
   title: "",
@@ -476,25 +536,66 @@ const toggleFavorite = async () => {
 
 const formatDate = (date) => new Date(date).toLocaleString();
 const handleFile = (e) => (cvFile.value = e.target.files[0]);
+
+const fetchSavedCvs = async () => {
+  if (!token) return;
+  try {
+    const res = await api.get("/cv");
+    savedCvs.value = res.data || [];
+    if (savedCvs.value.length) {
+      const def = savedCvs.value.find(c => c.is_default) || savedCvs.value[0];
+      selectedSavedCvId.value = def.id;
+    } else {
+      cvSource.value = 'upload'; // no saved CVs → default to upload tab
+    }
+  } catch (err) { /* silent */ }
+};
+
+const renderSavedCvToPdfBlob = async () => {
+  // Wait a tick so the hidden CvDocument renders
+  await new Promise(r => setTimeout(r, 60));
+  const el = document.getElementById('apply-cv-paper');
+  if (!el) throw new Error('CV render not found');
+  await document.fonts.ready;
+  const dataUrl = await toPng(el, { quality: 1, pixelRatio: 2, backgroundColor: '#ffffff' });
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const props = pdf.getImageProperties(dataUrl);
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (props.height * pdfWidth) / props.width;
+  pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
+  return pdf.output('blob');
+};
+
 const submitApplication = async () => {
-  if (!coverLetter.value.trim() && !cvFile.value) {
+  if (!coverLetter.value.trim() && cvSource.value === 'none') {
     info("Lūdzu pievienojiet motivācijas vēstuli vai CV!");
+    return;
+  }
+  if (cvSource.value === 'upload' && !cvFile.value && !coverLetter.value.trim()) {
+    info("Lūdzu pievienojiet CV failu vai pārslēdziet režīmu.");
+    return;
+  }
+  if (cvSource.value === 'saved' && !selectedSavedCvData.value && !coverLetter.value.trim()) {
+    info("Lūdzu izvēlieties saglabātu CV vai pievienojiet motivācijas vēstuli.");
     return;
   }
 
   const formData = new FormData();
   formData.append("cover_letter", coverLetter.value);
-  if (cvFile.value) formData.append("cv", cvFile.value);
 
   try {
-    const res = await api.post(
+    if (cvSource.value === 'upload' && cvFile.value) {
+      formData.append("cv", cvFile.value);
+    } else if (cvSource.value === 'saved' && selectedSavedCvData.value) {
+      const blob = await renderSavedCvToPdfBlob();
+      const safeName = (selectedSavedCvData.value.title || 'CV').replace(/[^a-z0-9_-]+/gi, '_');
+      formData.append("cv", new File([blob], `${safeName}.pdf`, { type: 'application/pdf' }));
+    }
+
+    await api.post(
       `/vacancies/${vacancy.value.id}/apply`,
       formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
 
     success("Pieteikums veiksmīgi nosūtīts!");
@@ -522,6 +623,7 @@ onMounted(async () => {
   await fetchVacancy();
   await fetchComments();
   await fetchFavorites();
+  await fetchSavedCvs();
 });
 </script>
 

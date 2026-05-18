@@ -4,12 +4,54 @@
 
       <!-- ================= EDITOR PANEL ================= -->
       <div class="p-8 lg:p-16 border-r border-gray-100 overflow-y-auto max-h-screen custom-scrollbar">
-        <header class="mb-12">
+        <header class="mb-8">
           <h1 class="text-5xl font-serif italic mb-4">CV Redaktors.</h1>
           <p class="text-[10px] uppercase font-bold tracking-widest text-gray-400">
-            Izveidojiet profesionālu eksportu
+            Izveidojiet vairākus CV un izvēlieties piemērotāko katrai vakancei
           </p>
         </header>
+
+        <!-- CV switcher / list -->
+        <section class="mb-10 space-y-3">
+          <div class="flex justify-between items-center">
+            <label class="section-label">Mani CV ({{ cvList.length }})</label>
+            <button @click="createNewCv" type="button"
+                    class="text-[10px] font-bold uppercase tracking-widest text-blue-600 hover:text-black transition-colors">
+              + Jauns CV
+            </button>
+          </div>
+          <div v-if="cvList.length === 0" class="text-xs text-gray-400 italic">
+            Vēl nav saglabātu CV. Aizpildiet veidlapu un noklikšķiniet "Saglabāt".
+          </div>
+          <div v-else class="flex flex-wrap gap-2">
+            <button
+              v-for="cv in cvList"
+              :key="cv.id"
+              @click="selectCv(cv)"
+              type="button"
+              class="px-3 py-2 border text-xs font-medium transition-all flex items-center gap-2"
+              :class="cv.id === selectedCvId
+                ? 'border-black bg-black text-white'
+                : 'border-gray-200 hover:border-black bg-white'"
+            >
+              <span>{{ cv.title }}</span>
+              <span v-if="cv.is_default" class="text-[8px] font-bold uppercase tracking-widest"
+                    :class="cv.id === selectedCvId ? 'text-blue-300' : 'text-blue-600'">★</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Title + default toggle -->
+        <section class="mb-10 space-y-4">
+          <div class="space-y-2">
+            <label class="section-label">CV nosaukums</label>
+            <input v-model="cvData.title" class="input-editorial" placeholder="Piem. Vue.js izstrādātāja CV" />
+          </div>
+          <label class="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+            <input type="checkbox" v-model="cvData.is_default" />
+            <span>Lietot šo kā noklusējuma CV pieteikumos</span>
+          </label>
+        </section>
 
         <!-- Template chooser -->
         <section class="mb-12">
@@ -89,14 +131,18 @@
                    placeholder="Ieraksti prasmi un spied Enter" />
           </section>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-3 gap-3">
             <button @click="saveCV"
                     class="bg-black text-white py-6 text-xs font-bold uppercase tracking-[0.3em] hover:bg-gray-800 transition-all shadow-xl">
-              Saglabāt
+              {{ selectedCvId ? 'Atjaunot' : 'Saglabāt' }}
             </button>
             <button @click="exportPDF"
                     class="bg-blue-600 text-white py-6 text-xs font-bold uppercase tracking-[0.3em] hover:bg-blue-700 transition-all shadow-xl">
               Eksportēt PDF
+            </button>
+            <button @click="deleteCv" :disabled="!selectedCvId"
+                    class="bg-red-50 text-red-500 py-6 text-xs font-bold uppercase tracking-[0.3em] hover:bg-red-500 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed">
+              Dzēst
             </button>
           </div>
         </div>
@@ -104,146 +150,7 @@
 
       <!-- ================= PREVIEW PANEL ================= -->
       <div class="bg-gray-200 p-8 lg:p-16 flex justify-center overflow-y-auto">
-        <div id="cv-paper"
-             class="bg-white w-[210mm] min-h-[297mm] shadow-2xl relative flex flex-col text-[#111111] overflow-hidden">
-
-          <!-- ====== EDITORIAL ====== -->
-          <div v-if="cvData.template === 'editorial'" class="p-[20mm] flex flex-col flex-grow">
-            <div class="text-center border-b-2 border-black pb-10 mb-10">
-              <h2 class="text-5xl font-serif uppercase tracking-tighter mb-4">
-                {{ profile.firstname }} {{ profile.lastname }}
-              </h2>
-              <div class="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
-                {{ profile.email }} <span class="mx-2">•</span> {{ profile.username }}
-              </div>
-            </div>
-            <div class="space-y-10 flex-grow">
-              <div v-if="cvData.summary">
-                <h3 class="preview-section-title">Profils</h3>
-                <p class="text-[13px] leading-relaxed italic text-gray-800">{{ cvData.summary }}</p>
-              </div>
-              <div v-if="cvData.experience.length">
-                <h3 class="preview-section-title">Darba Pieredze</h3>
-                <div v-for="(item, index) in cvData.experience" :key="index" class="mb-6 break-inside-avoid">
-                  <div class="flex justify-between items-baseline mb-1">
-                    <span class="font-bold text-base uppercase">{{ item.role || "Amats" }}</span>
-                    <span class="text-xs italic font-serif text-gray-500">{{ item.company || "Uzņēmums" }}</span>
-                  </div>
-                  <p v-if="item.years" class="text-[10px] text-gray-400 uppercase tracking-widest mb-1">{{ item.years }}</p>
-                  <p class="text-[12px] text-gray-600 leading-snug whitespace-pre-line">{{ item.desc }}</p>
-                </div>
-              </div>
-              <div v-if="cvData.education.length">
-                <h3 class="preview-section-title">Izglītība</h3>
-                <div v-for="(item, index) in cvData.education" :key="index" class="mb-6 break-inside-avoid">
-                  <div class="flex justify-between items-baseline mb-1">
-                    <span class="font-bold text-base uppercase">{{ item.school || "Mācību iestāde" }}</span>
-                    <span class="text-xs italic font-serif text-gray-500">{{ item.year }}</span>
-                  </div>
-                  <p class="text-[12px] text-gray-600 leading-snug">{{ item.degree }}</p>
-                </div>
-              </div>
-              <div v-if="cvData.skills.length">
-                <h3 class="preview-section-title">Prasmes</h3>
-                <div class="flex flex-wrap gap-x-6 gap-y-2">
-                  <span v-for="skill in cvData.skills" :key="skill"
-                        class="text-[12px] font-bold uppercase tracking-widest italic">/ {{ skill }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- ====== SIDEBAR ====== -->
-          <div v-else-if="cvData.template === 'sidebar'" class="grid grid-cols-[35%_65%] flex-grow">
-            <aside class="bg-[#0F172A] text-white p-[15mm] space-y-8">
-              <div>
-                <h2 class="text-3xl font-serif leading-tight">{{ profile.firstname }}</h2>
-                <h2 class="text-3xl font-serif leading-tight uppercase">{{ profile.lastname }}</h2>
-                <div class="h-[2px] w-12 bg-blue-500 mt-4"></div>
-              </div>
-              <div class="space-y-2">
-                <p class="text-[9px] uppercase font-bold tracking-widest text-blue-300">Kontakti</p>
-                <p class="text-[11px] break-words">{{ profile.email }}</p>
-                <p class="text-[11px] text-gray-400">@{{ profile.username }}</p>
-              </div>
-              <div v-if="cvData.skills.length" class="space-y-3">
-                <p class="text-[9px] uppercase font-bold tracking-widest text-blue-300">Prasmes</p>
-                <ul class="space-y-1.5">
-                  <li v-for="skill in cvData.skills" :key="skill" class="text-[11px] flex items-center gap-2">
-                    <span class="h-1 w-1 bg-blue-500 rounded-full"></span>{{ skill }}
-                  </li>
-                </ul>
-              </div>
-              <div v-if="cvData.education.length" class="space-y-3">
-                <p class="text-[9px] uppercase font-bold tracking-widest text-blue-300">Izglītība</p>
-                <div v-for="(item, index) in cvData.education" :key="index" class="space-y-0.5 break-inside-avoid">
-                  <p class="text-[11px] font-bold">{{ item.school }}</p>
-                  <p class="text-[10px] text-gray-400">{{ item.degree }}</p>
-                  <p class="text-[9px] text-blue-300 uppercase tracking-widest">{{ item.year }}</p>
-                </div>
-              </div>
-            </aside>
-            <main class="p-[15mm] space-y-8">
-              <div v-if="cvData.summary">
-                <p class="text-[10px] uppercase font-bold tracking-widest text-blue-600 mb-3">Profils</p>
-                <p class="text-[13px] leading-relaxed text-gray-800">{{ cvData.summary }}</p>
-              </div>
-              <div v-if="cvData.experience.length">
-                <p class="text-[10px] uppercase font-bold tracking-widest text-blue-600 mb-4">Darba Pieredze</p>
-                <div v-for="(item, index) in cvData.experience" :key="index"
-                     class="mb-5 pb-5 border-b border-gray-100 last:border-0 break-inside-avoid">
-                  <p class="font-bold text-sm uppercase">{{ item.role || "Amats" }}</p>
-                  <p class="text-xs text-gray-600 italic">{{ item.company }}</p>
-                  <p v-if="item.years" class="text-[9px] text-gray-400 uppercase tracking-widest mt-1">{{ item.years }}</p>
-                  <p class="text-[12px] text-gray-700 leading-snug whitespace-pre-line mt-2">{{ item.desc }}</p>
-                </div>
-              </div>
-            </main>
-          </div>
-
-          <!-- ====== MINIMAL ====== -->
-          <div v-else class="p-[22mm] flex flex-col flex-grow">
-            <div class="mb-10">
-              <h2 class="text-6xl font-serif leading-none mb-3">
-                {{ profile.firstname }}<br/>{{ profile.lastname }}
-              </h2>
-              <div class="flex gap-4 text-[10px] text-gray-500 uppercase tracking-widest mt-4">
-                <span>{{ profile.email }}</span>
-                <span>·</span>
-                <span>@{{ profile.username }}</span>
-              </div>
-            </div>
-            <div v-if="cvData.summary" class="mb-10">
-              <p class="text-[14px] leading-relaxed text-gray-800 font-serif italic">"{{ cvData.summary }}"</p>
-            </div>
-            <div class="grid grid-cols-[120px_1fr] gap-x-10 gap-y-10">
-              <template v-if="cvData.experience.length">
-                <p class="text-[10px] uppercase font-bold tracking-widest text-gray-400">Pieredze</p>
-                <div>
-                  <div v-for="(item, index) in cvData.experience" :key="index" class="mb-5 break-inside-avoid">
-                    <p class="text-sm font-bold">{{ item.role }} <span class="text-gray-400 font-normal">— {{ item.company }}</span></p>
-                    <p v-if="item.years" class="text-[10px] text-gray-400 uppercase tracking-widest">{{ item.years }}</p>
-                    <p class="text-[12px] text-gray-600 leading-snug whitespace-pre-line mt-1">{{ item.desc }}</p>
-                  </div>
-                </div>
-              </template>
-              <template v-if="cvData.education.length">
-                <p class="text-[10px] uppercase font-bold tracking-widest text-gray-400">Izglītība</p>
-                <div>
-                  <div v-for="(item, index) in cvData.education" :key="index" class="mb-4 break-inside-avoid">
-                    <p class="text-sm font-bold">{{ item.school }}</p>
-                    <p class="text-[12px] text-gray-600">{{ item.degree }} <span v-if="item.year" class="text-gray-400">· {{ item.year }}</span></p>
-                  </div>
-                </div>
-              </template>
-              <template v-if="cvData.skills.length">
-                <p class="text-[10px] uppercase font-bold tracking-widest text-gray-400">Prasmes</p>
-                <p class="text-[12px] text-gray-700 leading-relaxed">{{ cvData.skills.join(' · ') }}</p>
-              </template>
-            </div>
-          </div>
-
-        </div>
+        <CvDocument :cv-data="cvData" :profile="profile" paper-id="cv-paper" />
       </div>
 
     </div>
@@ -256,6 +163,7 @@ import { toPng } from 'html-to-image';
 import { jsPDF } from 'jspdf';
 import api from "@/services/api";
 import { useToast } from "@/composables/useToast";
+import CvDocument from "@/components/CvDocument.vue";
 
 const { success, error } = useToast();
 
@@ -266,8 +174,12 @@ const templates = [
 ];
 
 const profile = ref({ firstname: "", lastname: "", email: "", username: "" });
+const cvList = ref([]);
+const selectedCvId = ref(null);
 
-const cvData = ref({
+const blankCv = () => ({
+  title: "Mans CV",
+  is_default: false,
   summary: "",
   experience: [{ role: "", company: "", years: "", desc: "" }],
   education: [{ school: "", degree: "", year: "" }],
@@ -275,31 +187,51 @@ const cvData = ref({
   template: "editorial",
 });
 
+const cvData = ref(blankCv());
 const newSkill = ref("");
 
-const fetchInitialData = async () => {
-  const token = localStorage.getItem("token");
-  if (!token) return;
-  try {
-    const headers = { Authorization: `Bearer ${token}` };
-    const userRes = await api.get("/profile", { headers });
-    profile.value = userRes.data;
+const normalizeCv = (raw) => ({
+  title: raw.title || "Mans CV",
+  is_default: !!raw.is_default,
+  summary: raw.summary || "",
+  experience: raw.experience?.length ? raw.experience : [{ role: "", company: "", years: "", desc: "" }],
+  education: raw.education?.length ? raw.education : [{ school: "", degree: "", year: "" }],
+  skills: raw.skills || [],
+  template: raw.template || "editorial",
+});
 
-    const cvRes = await api.get("/cv", { headers });
-    if (cvRes.data) {
-      cvData.value = {
-        summary: cvRes.data.summary || "",
-        experience: cvRes.data.experience?.length ? cvRes.data.experience : [{ role: "", company: "", years: "", desc: "" }],
-        education: cvRes.data.education?.length ? cvRes.data.education : [{ school: "", degree: "", year: "" }],
-        skills: cvRes.data.skills || [],
-        template: cvRes.data.template || "editorial",
-      };
+const fetchProfile = async () => {
+  try {
+    const res = await api.get("/profile");
+    profile.value = res.data;
+  } catch (err) { /* silent */ }
+};
+
+const fetchCvs = async () => {
+  try {
+    const res = await api.get("/cv");
+    cvList.value = res.data || [];
+    if (cvList.value.length) {
+      const first = cvList.value.find(c => c.is_default) || cvList.value[0];
+      selectCv(first);
+    } else {
+      selectedCvId.value = null;
+      cvData.value = blankCv();
     }
   } catch (err) {
-    console.error("Datu ielādes kļūda:", err);
+    error("Neizdevās ielādēt CV sarakstu");
   }
 };
-onMounted(fetchInitialData);
+
+const selectCv = (cv) => {
+  selectedCvId.value = cv.id;
+  cvData.value = normalizeCv(cv);
+};
+
+const createNewCv = () => {
+  selectedCvId.value = null;
+  cvData.value = blankCv();
+};
 
 const addExperience = () => cvData.value.experience.push({ role: "", company: "", years: "", desc: "" });
 const removeExperience = i => cvData.value.experience.splice(i, 1);
@@ -313,11 +245,34 @@ const addSkill = () => {
 
 const saveCV = async () => {
   try {
-    const token = localStorage.getItem("token");
-    await api.post("/cv", cvData.value, { headers: { Authorization: `Bearer ${token}` } });
-    success("CV saglabāts veiksmīgi!");
+    const payload = { ...cvData.value };
+    if (selectedCvId.value) {
+      const res = await api.put(`/cv/${selectedCvId.value}`, payload);
+      success("CV atjaunots!");
+      await fetchCvs();
+      const updated = cvList.value.find(c => c.id === res.data.cv.id);
+      if (updated) selectCv(updated);
+    } else {
+      const res = await api.post("/cv", payload);
+      success("CV izveidots!");
+      await fetchCvs();
+      const created = cvList.value.find(c => c.id === res.data.cv.id);
+      if (created) selectCv(created);
+    }
   } catch (err) {
-    error("Kļūda saglabājot!");
+    error("Kļūda saglabājot CV");
+  }
+};
+
+const deleteCv = async () => {
+  if (!selectedCvId.value) return;
+  if (!confirm(`Vai tiešām dzēst CV "${cvData.value.title}"?`)) return;
+  try {
+    await api.delete(`/cv/${selectedCvId.value}`);
+    success("CV dzēsts");
+    await fetchCvs();
+  } catch (err) {
+    error("Neizdevās dzēst CV");
   }
 };
 
@@ -326,11 +281,7 @@ const exportPDF = async () => {
   if (!element) return;
   try {
     await document.fonts.ready;
-    const dataUrl = await toPng(element, {
-      quality: 1,
-      pixelRatio: 2,
-      backgroundColor: '#ffffff',
-    });
+    const dataUrl = await toPng(element, { quality: 1, pixelRatio: 2, backgroundColor: '#ffffff' });
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const imgProps = pdf.getImageProperties(dataUrl);
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -341,11 +292,15 @@ const exportPDF = async () => {
     error("Kļūda eksportējot PDF.");
   }
 };
+
+onMounted(async () => {
+  await fetchProfile();
+  await fetchCvs();
+});
 </script>
 
 <style scoped>
 @import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@1&family=Inter:wght@300;400;700&display=swap");
-
 .font-serif { font-family: "DM Serif Display", serif; }
 .section-label {
   font-size: 10px;
@@ -354,17 +309,6 @@ const exportPDF = async () => {
   letter-spacing: 0.2em;
   color: #9CA3AF;
 }
-.preview-section-title {
-  color: #2563EB;
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 1.5rem;
-  border-left: 3px solid #2563EB;
-  padding-left: 10px;
-}
-#cv-paper { background-color: #ffffff !important; color: #111111 !important; }
 .input-editorial {
   width: 100%;
   background: transparent;
@@ -375,7 +319,6 @@ const exportPDF = async () => {
   transition: border-color 0.2s;
 }
 .input-editorial:focus { border-bottom-color: #2563EB; }
-.break-inside-avoid { page-break-inside: avoid; }
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
 </style>

@@ -14,11 +14,13 @@ return new class extends Migration
         Schema::create('cv_details', function (Blueprint $table) {
         $table->id();
         $table->foreignId('user_id')->constrained()->onDelete('cascade');
-        $table->text('summary')->nullable(); // A "About Me" blurb
-        $table->json('experience')->nullable(); // Array of {company, role, years, desc}
-        $table->json('education')->nullable();  // Array of {school, degree, year}
-        $table->json('skills')->nullable();     // Array of strings ['Vue', 'Laravel']
-        $table->string('template', 32)->default('editorial'); // Layout: editorial / sidebar / minimal
+        $table->string('title', 120)->default('Mans CV');
+        $table->boolean('is_default')->default(false);
+        $table->text('summary')->nullable();
+        $table->json('experience')->nullable();
+        $table->json('education')->nullable();
+        $table->json('skills')->nullable();
+        $table->string('template', 32)->default('editorial');
         $table->timestamps();
     });
     }

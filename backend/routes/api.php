@@ -36,9 +36,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [UserController::class, 'profile']);
     Route::put('/profile', [UserController::class, 'updateProfile']);
     Route::delete('/profile/delete', [UserController::class, 'destroy']);
-    // CV routes
-    Route::get('/cv', [CvController::class, 'show']);
+    // CV routes (multi-CV per user)
+    Route::get('/cv', [CvController::class, 'index']);
     Route::post('/cv', [CvController::class, 'store']);
+    Route::get('/cv/{id}', [CvController::class, 'show']);
+    Route::put('/cv/{id}', [CvController::class, 'update']);
+    Route::delete('/cv/{id}', [CvController::class, 'destroy']);
     // Auth user helper
     Route::get('/user', fn (Request $request) => $request->user());
     Route::post('/logout', [AuthController::class, 'logout']);

@@ -63,8 +63,9 @@ class DatabaseSeeder extends Seeder
         );
 
         CvDetail::updateOrCreate(
-            ['user_id' => $seeker->id],
+            ['user_id' => $seeker->id, 'title' => 'Vue.js izstrādātājas CV'],
             [
+                'is_default' => true,
                 'summary'    => 'Motivēta programmētāja ar 3 gadu pieredzi tīmekļa lietotņu izstrādē. Specializējos Vue.js un Laravel tehnoloģijās.',
                 'experience' => [
                     ['company' => 'SIA Digital', 'role' => 'Jaunākā izstrādātāja', 'years' => '2022-2024', 'desc' => 'Vue.js lietotņu izstrāde.'],
@@ -74,6 +75,23 @@ class DatabaseSeeder extends Seeder
                     ['school' => 'Rīgas Valsts tehnikums', 'degree' => 'Programmēšanas tehniķis', 'year' => '2022'],
                 ],
                 'skills'     => ['Vue.js', 'Laravel', 'PHP', 'JavaScript', 'MySQL', 'Git', 'TailwindCSS'],
+                'template'   => 'editorial',
+            ]
+        );
+
+        CvDetail::updateOrCreate(
+            ['user_id' => $seeker->id, 'title' => 'Backend fokuss'],
+            [
+                'is_default' => false,
+                'summary'    => 'Aizraujos ar API izstrādi un datubāzu projektēšanu. Meklēju iespēju strādāt ar Laravel un PHP komandā.',
+                'experience' => [
+                    ['company' => 'SIA WebLab', 'role' => 'Backend prakstikante', 'years' => '2021-2022', 'desc' => 'Laravel REST API endpointu izstrāde.'],
+                ],
+                'education'  => [
+                    ['school' => 'Rīgas Valsts tehnikums', 'degree' => 'Programmēšanas tehniķis', 'year' => '2022'],
+                ],
+                'skills'     => ['Laravel', 'PHP 8', 'MySQL', 'REST API', 'Git'],
+                'template'   => 'sidebar',
             ]
         );
 
