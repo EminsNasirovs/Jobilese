@@ -15,6 +15,7 @@ nixPkgs = [
   "php83Extensions.exif",
   "php83Extensions.pcntl",
   "php83Extensions.opcache",
+  "php83Extensions.fileinfo",
 ]
 
 [phases.install]
@@ -34,4 +35,4 @@ cmds = [
 #   reverb    → starts the WebSocket server
 #   queue     → runs the queue worker
 [start]
-cmd = "sh -c 'ROLE=${CONTAINER_ROLE:-web}; if [ \"$ROLE\" = \"reverb\" ]; then exec php artisan reverb:start --host=0.0.0.0 --port=${REVERB_SERVER_PORT:-8080}; elif [ \"$ROLE\" = \"queue\" ]; then exec php artisan queue:work --tries=3 --timeout=90 --sleep=3; else php artisan storage:link || true; php artisan migrate --force --no-interaction || true; php artisan config:cache; php artisan route:cache; php artisan view:cache; exec php artisan serve --host=0.0.0.0 --port=${PORT:-8000}; fi'"
+cmd = "sh -c 'ROLE=${CONTAINER_ROLE:-web}; if [ \"$ROLE\" = \"reverb\" ]; then exec php artisan reverb:start --host=0.0.0.0 --port=${REVERB_SERVER_PORT:-8080}; elif [ \"$ROLE\" = \"queue\" ]; then exec php artisan queue:work --tries=3 --timeout=90 --sleep=3; else php artisan storage:link || true; php artisan migrate --force --no-interaction || true; php artisan config:cache; php artisan route:cache; php artisan view:cache; exec php -d upload_max_filesize=20M -d post_max_size=32M artisan serve --host=0.0.0.0 --port=${PORT:-8000}; fi'"

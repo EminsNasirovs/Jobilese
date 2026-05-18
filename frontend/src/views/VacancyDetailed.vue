@@ -562,7 +562,7 @@ const renderSavedCvToPdfBlob = async () => {
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = (props.height * pdfWidth) / props.width;
   pdf.addImage(dataUrl, 'PNG', 0, 0, pdfWidth, pdfHeight);
-  const buf = pdf.output('arraybuffer');
+  const buf = await pdf.output('arraybuffer');
   return new Blob([buf], { type: 'application/pdf' });
 };
 
