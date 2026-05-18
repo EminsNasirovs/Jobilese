@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/chat/start', [ChatController::class, 'startOrGet']);
     Route::get('/chat/{id}/messages', [ChatController::class, 'messages']);
     Route::post('/chat/{id}/send', [ChatController::class, 'send']);
+    Route::delete('/chat/{id}', [ChatController::class, 'destroy']);
     Route::get('/chat/unread', [ChatController::class, 'unreadCount']);
 
     // File uploads

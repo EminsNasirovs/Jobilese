@@ -7,7 +7,8 @@
           <div class="relative group w-full lg:w-1/3">
             <div class="aspect-square bg-white shadow-[20px_20px_60px_rgba(0,0,0,0.05)] border border-black/[0.03] flex items-center justify-center p-12 transition-transform duration-700 group-hover:scale-[1.02]">
               <img
-                :src="vacancy.logo_url || '/default-logo.png'"
+                :src="vacancy.logo_url || '/default-logo.svg'"
+                @error="$event.target.src='/default-logo.svg'"
                 alt="Company Logo"
                 class="w-full h-full object-contain"
               />

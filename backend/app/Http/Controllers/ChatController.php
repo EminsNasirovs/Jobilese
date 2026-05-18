@@ -136,6 +136,25 @@ class ChatController extends Controller
     }
 
     /**
+     * Delete a conversation. Either participant may delete; cascades to messages.
+     */
+    public function destroy(Request $request, $conversationId)
+    {
+        $user = $request->user();
+
+        $conversation = Conversation::where('id', $conversationId)
+            ->where(function ($q) use ($user) {
+                $q->where('employer_id', $user->id)
+                  ->orWhere('applicant_id', $user->id);
+            })
+            ->firstOrFail();
+
+        $conversation->delete();
+
+        return response()->json(['message' => 'Saruna dzēsta']);
+    }
+
+    /**
      * Total unread message count for the current user (for nav badge)
      */
     public function unreadCount(Request $request)

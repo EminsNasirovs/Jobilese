@@ -24,9 +24,10 @@
     <div class="flex flex-col h-full space-y-6">
       <div class="w-16 h-16 bg-gray-50 flex items-center justify-center overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700">
         <img
-          :src="logo ? storageUrl(logo) : '/default-logo.png'"
+          :src="logoSrc"
+          @error="onLogoError"
           alt="company logo"
-          class="w-full h-full object-contain p-2"
+          class="w-full h-full object-contain"
         />
       </div>
 
@@ -67,13 +68,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import api, { storageUrl } from "@/services/api";
 
 const props = defineProps({
   id: Number,
   logo: String,
+  logo_url: String,
   title: String,
   company: String,
   salary: String,
@@ -82,6 +84,15 @@ const props = defineProps({
   county: String,
   isFavorite: { type: Boolean, default: false },
 });
+
+const logoFailed = ref(false);
+const logoSrc = computed(() => {
+  if (logoFailed.value) return '/default-logo.svg';
+  if (props.logo_url) return props.logo_url;
+  if (props.logo) return storageUrl(props.logo);
+  return '/default-logo.svg';
+});
+const onLogoError = () => { logoFailed.value = true; };
 
 const emit = defineEmits(["favoriteChanged"]);
 const router = useRouter();

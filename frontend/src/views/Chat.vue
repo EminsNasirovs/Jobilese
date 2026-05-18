@@ -17,11 +17,11 @@
           v-for="conv in conversations"
           :key="conv.id"
           @click="selectConversation(conv)"
-          class="py-4 border-b border-black/[0.04] cursor-pointer transition-all duration-300 hover:pl-2 group"
+          class="py-4 border-b border-black/[0.04] cursor-pointer transition-all duration-300 hover:pl-2 group relative"
           :class="{ 'pl-2 border-l-2 border-blue-600': selectedConv?.id === conv.id }"
         >
-          <div class="flex justify-between items-start">
-            <div class="space-y-0.5">
+          <div class="flex justify-between items-start gap-2">
+            <div class="space-y-0.5 min-w-0 flex-1">
               <p class="text-sm font-medium group-hover:text-blue-600 transition-colors">
                 {{ otherPerson(conv) }}
               </p>
@@ -32,12 +32,23 @@
                 {{ conv.latest_message?.body || '—' }}
               </p>
             </div>
-            <span
-              v-if="conv.unread_count > 0"
-              class="shrink-0 bg-blue-600 text-white text-[9px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1"
-            >
-              {{ conv.unread_count }}
-            </span>
+            <div class="flex items-center gap-2 shrink-0">
+              <span
+                v-if="conv.unread_count > 0"
+                class="bg-blue-600 text-white text-[9px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1"
+              >
+                {{ conv.unread_count }}
+              </span>
+              <button
+                @click.stop="deleteConversation(conv)"
+                title="Dzēst sarunu"
+                class="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -120,7 +131,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import api from '@/services/api.js';
 import { useToast } from '@/composables/useToast';
 
-const { error } = useToast();
+const { error, success } = useToast();
 
 const conversations = ref([]);
 const selectedConv = ref(null);
@@ -215,6 +226,25 @@ const sendMessage = async () => {
   } catch (e) {
     error('Neizdevās nosūtīt ziņojumu');
     newMessage.value = body;
+  }
+};
+
+const deleteConversation = async (conv) => {
+  if (!confirm(`Vai tiešām dzēst sarunu ar ${otherPerson(conv)}? Visi ziņojumi tiks dzēsti.`)) return;
+  try {
+    await api.delete(`/chat/${conv.id}`, authHeaders);
+    conversations.value = conversations.value.filter(c => c.id !== conv.id);
+    if (selectedConv.value?.id === conv.id) {
+      selectedConv.value = null;
+      messages.value = [];
+      if (window.Echo && echoConvId !== null) {
+        window.Echo.leave(`conversation.${echoConvId}`);
+        echoConvId = null;
+      }
+    }
+    success('Saruna dzēsta');
+  } catch (e) {
+    error('Neizdevās dzēst sarunu');
   }
 };
 
