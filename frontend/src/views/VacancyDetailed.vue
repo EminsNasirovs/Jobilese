@@ -580,23 +580,32 @@ const submitApplication = async () => {
     return;
   }
 
-  const formData = new FormData();
-  formData.append("cover_letter", coverLetter.value);
-
   try {
-    if (cvSource.value === 'upload' && cvFile.value) {
-      formData.append("cv", cvFile.value);
-    } else if (cvSource.value === 'saved' && selectedSavedCvData.value) {
+    if (cvSource.value === 'saved' && selectedSavedCvData.value) {
+      // Send as base64 JSON to avoid PHP multipart upload size limits
       const blob = await renderSavedCvToPdfBlob();
       const safeName = (selectedSavedCvData.value.title || 'CV').replace(/[^a-z0-9_-]+/gi, '_');
-      formData.append("cv", new File([blob], `${safeName}.pdf`, { type: 'application/pdf' }));
+      const buf = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary = '';
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      await api.post(`/vacancies/${vacancy.value.id}/apply`, {
+        cover_letter: coverLetter.value,
+        cv_base64: btoa(binary),
+        cv_filename: `${safeName}.pdf`,
+      });
+    } else {
+      const formData = new FormData();
+      formData.append("cover_letter", coverLetter.value);
+      if (cvSource.value === 'upload' && cvFile.value) {
+        formData.append("cv", cvFile.value);
+      }
+      await api.post(
+        `/vacancies/${vacancy.value.id}/apply`,
+        formData,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
     }
-
-    await api.post(
-      `/vacancies/${vacancy.value.id}/apply`,
-      formData,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
 
     success("Pieteikums veiksmīgi nosūtīts!");
     showApplicationModal.value = false;

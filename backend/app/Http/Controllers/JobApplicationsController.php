@@ -28,12 +28,21 @@ class JobApplicationsController extends Controller
 
         $validated = $request->validate([
             'cover_letter' => 'nullable|string|max:2000',
-            'cv' => 'nullable|file|mimes:pdf|max:8192', // up to 8MB
+            'cv'           => 'nullable|file|mimes:pdf|max:8192',
+            'cv_base64'    => 'nullable|string',
+            'cv_filename'  => 'nullable|string|max:255',
         ]);
 
         $cvPath = null;
         if ($request->hasFile('cv')) {
             $cvPath = $request->file('cv')->store('cvs', 'public');
+        } elseif (!empty($validated['cv_base64'])) {
+            $decoded = base64_decode($validated['cv_base64'], true);
+            if ($decoded !== false) {
+                $filename = 'cvs/' . uniqid('cv_', true) . '.pdf';
+                Storage::disk('public')->put($filename, $decoded);
+                $cvPath = $filename;
+            }
         }
 
         $application = JobApplication::create([
