@@ -26,6 +26,13 @@ class JobApplicationsController extends Controller
             return response()->json(['message' => 'Vacancy not found'], 404);
         }
 
+        $alreadyApplied = JobApplication::where('vacancy_id', $vacancy->id)
+            ->where('user_id', $user->id)
+            ->exists();
+        if ($alreadyApplied) {
+            return response()->json(['message' => 'Jūs jau esat pieteicies šai vakancei.'], 409);
+        }
+
         $validated = $request->validate([
             'cover_letter' => 'nullable|string|max:2000',
             'cv'           => 'nullable|file|mimes:pdf|max:8192',

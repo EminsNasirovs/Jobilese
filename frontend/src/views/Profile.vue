@@ -185,6 +185,8 @@ const confirmDelete = async () => {
       data: { password: deletePassword.value },
     });
     localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user_id");
     window.location.href = "/";
   } catch (err) { error(err.response?.data?.message || "Kļūda dzēšanā."); }
 };

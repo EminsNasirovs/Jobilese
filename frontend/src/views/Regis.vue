@@ -158,6 +158,7 @@ const register = async () => {
     });
     localStorage.setItem("token", response.data.token);
     localStorage.setItem("role", response.data.user.role);
+    localStorage.setItem("user_id", response.data.user.id);
     window.location.href = "/profile";
   } catch (err: any) {
     error(err.response?.data?.message || "Neizdevās reģistrēties");
